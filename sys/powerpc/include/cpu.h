@@ -41,6 +41,10 @@
 #include <machine/pcb.h>
 #include <machine/psl.h>
 
+#define PPC_BITLSHIFT(bit)	(sizeof(long)*NBBY - 1 - (bit))
+#define PPC_BIT(bit)		(1UL << PPC_BITLSHIFT(bit))
+#define PPC_BITLSHIFT_VAL(val, bit) ((val) << PPC_BITLSHIFT(bit))
+
 /*
  * CPU Feature Attributes
  *
@@ -89,6 +93,7 @@ extern u_long cpu_features2;
 #define	PPC_FEATURE2_HAS_IEEE128	0x00400000
 #define	PPC_FEATURE2_DARN	0x00200000
 #define	PPC_FEATURE2_SCV	0x00100000
+#define	PPC_FEATURE2_MMU_RADIX	0x00080000
 #define	PPC_FEATURE2_HTM_NOSUSPEND	0x01000000
 
 #define	PPC_FEATURE_BITMASK						\

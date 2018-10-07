@@ -83,8 +83,8 @@
 #if !defined(LOCORE)
 #ifdef __powerpc64__
 #define	VM_MIN_ADDRESS		(0x0000000000000000UL)
-#define	VM_MAXUSER_ADDRESS	(0x3ffffffffffff000UL)
-#define	VM_MAX_ADDRESS		(0xffffffffffffffffUL)
+#define	VM_MAXUSER_ADDRESS	(0x000fffffc0000000UL)
+#define	VM_MAX_ADDRESS		(0xc00fffffc0000000UL)
 #else
 #define	VM_MIN_ADDRESS		((vm_offset_t)0)
 #define	VM_MAXUSER_ADDRESS	VM_MAXUSER_ADDRESS32
@@ -95,7 +95,7 @@
 #ifdef BOOKE
 #define	VM_MIN_ADDRESS		0
 #ifdef __powerpc64__
-#define	VM_MAXUSER_ADDRESS	0x3ffffffffffff000
+#define	VM_MAXUSER_ADDRESS	0x000fffffffffffff
 #else
 #define	VM_MAXUSER_ADDRESS	0x7ffff000
 #endif
@@ -106,18 +106,32 @@
 #define	FREEBSD32_USRSTACK	FREEBSD32_SHAREDPAGE
 
 #ifdef __powerpc64__
+
+/*
+ * Virtual addresses of things.  Derived from the page directory and
+ * page table indexes from pmap.h for precision.
+ *
+ * kernel map should be able to start at 0xc008000000000000 -
+ * but at least the functional simulator doesn't like it
+ *
+ * 0x0000000000000000 - 0x000fffffffffffff   user map
+ * 0xc000000000000000 - 0xc007ffffffffffff   direct map 
+ * 0xc008000000000000 - 0xc00fffffffffffff   kernel map
+ *
+ */
+
 #ifndef LOCORE
-#define	VM_MIN_KERNEL_ADDRESS		0xe000000000000000UL
-#define	VM_MAX_KERNEL_ADDRESS		0xe0000007ffffffffUL
+#define	VM_MIN_KERNEL_ADDRESS		0xc008000000000000UL
+#define	VM_MAX_KERNEL_ADDRESS		0xc00fffffffffffffUL
 #else
-#define	VM_MIN_KERNEL_ADDRESS		0xe000000000000000
-#define	VM_MAX_KERNEL_ADDRESS		0xe0000007ffffffff
+#define	VM_MIN_KERNEL_ADDRESS		0xc008000000000000
+#define	VM_MAX_KERNEL_ADDRESS		0xc00fffffffffffff
 #endif
 #define	VM_MAX_SAFE_KERNEL_ADDRESS	VM_MAX_KERNEL_ADDRESS
 #endif
 
 #ifdef AIM
-#define	KERNBASE		0x00100100	/* start of kernel virtual */
+#define	KERNBASE		0x00100100    /* start of kernel virtual */
 
 #ifndef __powerpc64__
 #define	VM_MIN_KERNEL_ADDRESS	((vm_offset_t)KERNEL_SR << ADDR_SR_SHFT)
@@ -149,7 +163,7 @@ struct pmap_physseg {
 };
 #endif
 
-#define	VM_PHYSSEG_MAX		16	/* 1? */
+#define	VM_PHYSSEG_MAX		63	/* 1? */
 
 /*
  * The physical address space is densely populated on 32-bit systems,
@@ -190,7 +204,22 @@ struct pmap_physseg {
  * Disable superpage reservations.
  */
 #ifndef	VM_NRESERVLEVEL
+#ifdef __powerpc64__
+#define	VM_NRESERVLEVEL		1
+#else
 #define	VM_NRESERVLEVEL		0
+#endif
+#endif
+
+/*
+ * Level 0 reservations consist of 512 pages.
+ */
+#ifndef	VM_LEVEL_0_ORDER
+#define	VM_LEVEL_0_ORDER	9
+#endif
+
+#ifdef	SMP
+#define	PA_LOCK_COUNT	256
 #endif
 
 #ifndef VM_INITIAL_PAGEIN
@@ -259,7 +288,8 @@ struct pmap_physseg {
 #ifndef LOCORE
 #ifdef __powerpc64__
 #define	DMAP_BASE_ADDRESS	0xc000000000000000UL
-#define	DMAP_MAX_ADDRESS	0xcfffffffffffffffUL
+#define	DMAP_MIN_ADDRESS	DMAP_BASE_ADDRESS
+#define	DMAP_MAX_ADDRESS	0xc007ffffffffffffUL
 #else
 #define	DMAP_BASE_ADDRESS	0x00000000UL
 #define	DMAP_MAX_ADDRESS	0xbfffffffUL

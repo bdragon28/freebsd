@@ -75,7 +75,6 @@ struct pmap kernel_pmap_store;
 vm_offset_t    msgbuf_phys;
 
 vm_offset_t kernel_vm_end;
-vm_paddr_t phys_avail[PHYS_AVAIL_SZ];
 vm_offset_t virtual_avail;
 vm_offset_t virtual_end;
 
@@ -224,7 +223,7 @@ pmap_is_referenced(vm_page_t m)
 	return (MMU_IS_REFERENCED(mmu_obj, m));
 }
 
-boolean_t
+int
 pmap_ts_referenced(vm_page_t m)
 {
 

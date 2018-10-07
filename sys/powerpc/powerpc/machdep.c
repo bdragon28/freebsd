@@ -129,6 +129,19 @@ __FBSDID("$FreeBSD$");
 #include <dev/ofw/openfirm.h>
 #include <dev/ofw/ofw_subr.h>
 
+/*
+ * The number of PHYSMAP entries must be one less than the number of
+ * PHYSSEG entries because the PHYSMAP entry that spans the largest
+ * physical address that is accessible by ISA DMA is split into two
+ * PHYSSEG entries.
+ */
+#define	PHYSMAP_SIZE	(2 * (VM_PHYSSEG_MAX - 1))
+
+
+vm_paddr_t phys_avail[PHYSMAP_SIZE + 2];
+vm_paddr_t dump_avail[PHYSMAP_SIZE + 2];
+
+
 int cold = 1;
 #ifdef __powerpc64__
 int cacheline_size = 128;
@@ -411,7 +424,6 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	 */
 	pmap_bootstrap(startkernel, endkernel);
 	mtmsr(psl_kernset & ~PSL_EE);
-
 	/*
 	 * Initialize params/tunables that are derived from memsize
 	 */
@@ -420,21 +432,19 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	/*
 	 * Grab booted kernel's name
 	 */
-        env = kern_getenv("kernelname");
-        if (env != NULL) {
+	env = kern_getenv("kernelname");
+	if (env != NULL) {
 		strlcpy(kernelname, env, sizeof(kernelname));
 		freeenv(env);
 	}
-
 	/*
 	 * Finish setting up thread0.
 	 */
 	thread0.td_pcb = (struct pcb *)
 	    ((thread0.td_kstack + thread0.td_kstack_pages * PAGE_SIZE -
-	    sizeof(struct pcb)) & ~15UL);
+		  sizeof(struct pcb)) & ~15UL);
 	bzero((void *)thread0.td_pcb, sizeof(struct pcb));
 	pc->pc_curpcb = thread0.td_pcb;
-
 	/* Initialise the message buffer. */
 	msgbufinit(msgbufp, msgbufsize);
 
