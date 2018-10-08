@@ -35,6 +35,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/pcpu.h>
 #include <sys/proc.h>
 #include <sys/smp.h>
+#include <sys/syslog.h>
 #include <vm/vm.h>
 #include <vm/pmap.h>
 
@@ -496,6 +497,7 @@ powernv_cpu_idle(sbintime_t sbt)
 }
 
 /* Set up the Nest MMU on POWER9 relatively early, but after pmap is setup. */
+#if 0
 static void
 powernv_setup_nmmu(void *unused)
 {
@@ -505,3 +507,14 @@ powernv_setup_nmmu(void *unused)
 }
 
 SYSINIT(powernv_setup_nmmu, SI_SUB_CPU, SI_ORDER_ANY, powernv_setup_nmmu, NULL);
+#endif
+
+void
+powernv_set_nmmu_ptcr(uint64_t ptcr)
+{
+	int rc;
+
+	rc = opal_call(OPAL_NMMU_SET_PTCR, -1UL, ptcr);
+	if (rc != OPAL_SUCCESS && rc != OPAL_UNSUPPORTED)
+		log(LOG_WARNING, "%s: failed to set nest mmu ptcr\n", __func__);
+}

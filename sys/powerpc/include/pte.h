@@ -70,6 +70,12 @@ struct pate {
 	u_int64_t proctab;
 };
 
+/* Process table entry */
+struct prte {
+	u_int64_t proctab0;
+	u_int64_t proctab1;
+};
+
 typedef	struct pte pte_t;
 typedef	struct lpte lpte_t;
 #endif	/* LOCORE */

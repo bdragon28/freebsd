@@ -77,6 +77,12 @@
 #include <machine/tlb.h>
 #include <machine/vmparam.h>
 
+typedef uint64_t pml1_entry_t;
+typedef uint64_t pml2_entry_t;
+typedef uint64_t pml3_entry_t;
+typedef uint64_t pml4_entry_t;
+
+
 struct pmap;
 typedef struct pmap *pmap_t;
 
@@ -138,11 +144,10 @@ RB_PROTOTYPE(pvo_tree, pvo_entry, pvo_plink, pvo_vaddr_compare);
 	((void)((pvo)->pvo_vaddr |= (i)|PVO_PTEGIDX_VALID))
 #define	PVO_VSID(pvo)		((pvo)->pvo_vpn >> 16)
 
-struct	pmap {
-	struct		pmap_statistics	pm_stats;
+struct pmap {
 	struct	mtx	pm_mtx;
-	cpuset_t	pm_active;
 	union {
+		/* HPT support (32 or 64 bit) */
 		struct {
 			
 		    #ifdef __powerpc64__
@@ -156,6 +161,16 @@ struct	pmap {
 			struct pmap	*pmap_phys;
 			struct pvo_tree pmap_pvo;
 		};
+#ifdef __powerpc64__
+		/* Radix support (ISA 3.0+) */
+		struct {
+			/* PIDR value */
+			uint64_t	pm_pid;
+			/* KVA of level root page directory */
+			pml1_entry_t	*pm_pml1;
+		};
+#endif
+		/* Book-E page tables */
 		struct {
 			/* TID to identify this pmap entries in TLB */
 			tlbtid_t	pm_tid[MAXCPU];	
@@ -178,6 +193,8 @@ struct	pmap {
 #endif
 		};
 	};
+	struct		pmap_statistics	pm_stats;
+	cpuset_t	pm_active;
 };
 
 struct pv_entry {
