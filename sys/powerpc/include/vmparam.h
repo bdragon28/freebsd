@@ -81,6 +81,20 @@
  * Would like to have MAX addresses = 0, but this doesn't (currently) work
  */
 #ifdef __powerpc64__
+/*
+ * Virtual addresses of things.  Derived from the page directory and
+ * page table indexes from pmap.h for precision.
+ *
+ * 0x0000000000000000 - 0x00007fffffffffff   user map
+ * 0xc000000000000000 - 0xc0000fffffffffff   direct map
+ * 0xc000100000000000 - 0xc0001fffffffffff   kernel map
+ * 0xc001000000000000 - 0xc001000dffffffff   recursive page table (8TB slot)
+ *
+ */
+
+#define	KPML0BASE		0xc001000000000000
+#define	PML0SHIFT		39
+
 #define	VM_MIN_ADDRESS		0x0000000000000000
 #define	VM_MAXUSER_ADDRESS	0x3ffffffffffff000
 #define	VM_MAX_ADDRESS		0xffffffffffffffff

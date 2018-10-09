@@ -198,9 +198,9 @@ struct pmap {
 };
 
 struct pv_entry {
-	pmap_t pv_pmap;
-	vm_offset_t pv_va;
-	TAILQ_ENTRY(pv_entry) pv_link;
+	pmap_t 		pv_pmap;	/* XXX */
+	vm_offset_t	pv_va;		/* virtual address for mapping */
+	TAILQ_ENTRY(pv_entry)	pv_next;
 };
 typedef struct pv_entry *pv_entry_t;
 
@@ -212,8 +212,9 @@ struct	md_page {
 			struct	pvo_head mdpg_pvoh;
 		};
 		struct {
-			TAILQ_HEAD(, pv_entry)	pv_list;
-			int			pv_tracked;
+			TAILQ_HEAD(, pv_entry)	pv_list;  /* (p) */
+			int			pv_gen;   /* (p) */
+			vm_memattr_t		md_attr;
 		};
 	};
 };
