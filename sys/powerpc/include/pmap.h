@@ -77,10 +77,10 @@
 #include <machine/tlb.h>
 #include <machine/vmparam.h>
 
+typedef uint64_t pml0_entry_t;
 typedef uint64_t pml1_entry_t;
 typedef uint64_t pml2_entry_t;
 typedef uint64_t pml3_entry_t;
-typedef uint64_t pml4_entry_t;
 
 
 struct pmap;
@@ -166,8 +166,8 @@ struct pmap {
 		struct {
 			/* PIDR value */
 			uint64_t	pm_pid;
-			/* KVA of level root page directory */
-			pml1_entry_t	*pm_pml1;
+			/* KVA of root page directory */
+			pml1_entry_t	*pm_pml0;
 		};
 #endif
 		/* Book-E page tables */
