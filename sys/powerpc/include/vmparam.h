@@ -112,19 +112,18 @@
  * page table indexes from pmap.h for precision.
  *
  * 0x0000000000000000 - 0x00007fffffffffff   user map
- * 0xc000000000000000 - 0xc0000fffffffffff   direct map 
- * 0xc000100000000000 - 0xc0001fffffffffff   kernel map
- * 0xc001000000000000 - 0xc001000dffffffff   recursive page table (8TB slot)
+ * 0xc000000000000000 - 0xc003ffffffffffff   direct map 
+ * 0xc004000000000000 - 0xc00fffffffffffff   kernel map
  *
  */
 
 #define KPML0BASE			0xc001000000000000
 #define PML0SHIFT			39
-#define	VM_MIN_KERNEL_ADDRESS		0xe000000000000000UL
-#define	VM_MAX_KERNEL_ADDRESS		0xe0000007ffffffffUL
+#define	VM_MIN_KERNEL_ADDRESS		0xc004000000000000UL
+#define	VM_MAX_KERNEL_ADDRESS		0xc00fffffffffffffUL
 #else
-#define	VM_MIN_KERNEL_ADDRESS		0xe000000000000000
-#define	VM_MAX_KERNEL_ADDRESS		0xe0000007ffffffff
+#define	VM_MIN_KERNEL_ADDRESS		0xc004000000000000
+#define	VM_MAX_KERNEL_ADDRESS		0xc00fffffffffffff
 #endif
 #define	VM_MAX_SAFE_KERNEL_ADDRESS	VM_MAX_KERNEL_ADDRESS
 #endif
