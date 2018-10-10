@@ -151,6 +151,9 @@ typedef	struct lpte lpte_t;
 #define	RPTE_R			0x0000000000000100ULL
 #define	RPTE_C			0x0000000000000080ULL
 
+#define	RPTE_MANAGED	RPTE_SW1
+#define	RPTE_WIRED	RPTE_SW2
+
 #define	RPTE_ATTR_MASK		0x0000000000000030ULL
 #define	RPTE_ATTR_MEM		0x0000000000000000ULL /* PTE M */
 #define	RPTE_ATTR_SAO		0x0000000000000010ULL /* PTE WIM */
@@ -165,9 +168,12 @@ typedef	struct lpte lpte_t;
 
 #define	RPDE_VALID		RPTE_VALID
 #define	RPDE_LEAF		RPTE_LEAF             /* is a PTE: always 0 */
-#define	RPDE_NLB_MASK		0x0FFFFFFFFFFFFF00ULL
+#define	RPDE_NLB_MASK		0x00FFFFFFFFFFFF00ULL
 #define	RPDE_NLB_SHIFT		8
 #define	RPDE_NLS_MASK		0x000000000000001FULL
+
+#define	PG_FRAME	(0x01fffffffffff000ul)
+#define	PG_PS_FRAME	(0x01ffffffffe00000ul)
 
 /*
  * Extract bits from address
