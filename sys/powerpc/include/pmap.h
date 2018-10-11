@@ -189,6 +189,7 @@ struct pmap {
 			struct vm_radix		pm_root;
 			/* list of mappings in pmap */
 			TAILQ_HEAD(,pv_chunk)	pm_pvchunk;
+			int pm_flags;
 		};
 #endif
 		/* Book-E page tables */
@@ -329,6 +330,7 @@ vm_paddr_t	pmap_kextract(vm_offset_t);
 int		pmap_dev_direct_mapped(vm_paddr_t, vm_size_t);
 boolean_t	pmap_mmu_install(char *name, int prio);
 const char	*pmap_mmu_name(void);
+bool		pmap_ps_enabled(pmap_t pmap);
 
 void		pmap_page_array_startup(long count);
 
