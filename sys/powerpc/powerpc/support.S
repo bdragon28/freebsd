@@ -39,6 +39,10 @@
 #include <machine/param.h>
 #include <machine/asm.h>
 
+#ifdef _CALL_ELF
+.abiversion _CALL_ELF
+#endif
+
 .macro PROLOGUE
 	mflr	%r0 
 	std	%r0, 16(%r1)
@@ -47,32 +51,50 @@
 .macro EPILOGUE
 	ld	%r0, 16(%r1)
 	mtlr	%r0
+	blr
+	nop
+.endm
+
+.macro VALIDATE_ADDR_COPY raddr
+	srdi  %r0, \raddr, 52
+	cmpwi %r0, 1
+	bge-	copy_fault
+	nop
+.endm
+
+.macro VALIDATE_ADDR_FUSU raddr
+	srdi  %r0, \raddr, 52
+	cmpwi %r0, 1
+	bge-	fusufault
+	nop
 .endm
 	
-#define PCPU(reg) mfsprg  reg, 0	
+#define PCPU(reg) mfsprg  reg, 0
 
-.macro SET_COPYFAULT rpcb
-	PCPU(%r6)
-	ld  %r9, copy_fault@got(%r2)
-	ld  %r0, 0(%r9)
-	ld  \rpcb, PC_CURPCB(%r6)
-	std %r0, PCB_ONFAULT(\rpcb)	
-.endm
-
-.macro SET_FUSUFAULT rpcb
-	PCPU(%r6)
-	ld  %r9, fusufault@got(%r2)
-	ld  %r0, 0(%r9)
-	ld  \rpcb, PC_CURPCB(%r6)
-	std %r0, PCB_ONFAULT(\rpcb)	
-.endm
-
-	
-.macro CLEAR_FAULT rpcb
-	li  %r0, 0
+.macro SET_COPYFAULT raddr rpcb
+	VALIDATE_ADDR_COPY \raddr
+	PCPU(%r9)
+	li %r0, 1
+	ld  \rpcb, PC_CURPCB(%r9)
 	std %r0, PCB_ONFAULT(\rpcb)
 .endm
-	
+
+.macro SET_FUSUFAULT raddr rpcb
+	VALIDATE_ADDR_FUSU \raddr
+	PCPU(%r9)
+	li  %r0, 2
+	ld  \rpcb, PC_CURPCB(%r9)
+	std %r0, PCB_ONFAULT(\rpcb)
+.endm
+
+.macro CLEAR_FAULT rpcb clobber
+	li  %r0, 0
+	std %r0, PCB_ONFAULT(\rpcb)
+.if  	\clobber == 1
+	li  %r3, 0
+.endif
+.endm
+
 /*
 
  *  bcopy(src, dst, len)
@@ -147,7 +169,7 @@ ENTRY(bcopy_generic)
 0:
 	bf	27, 1f
 	ld	t1, 0(rs)
-	ld	t2, 0(rs)
+	ld	t2, 8(rs)
 	addi	rs, rs, 16
 	std	t1, 0(rd)
 	std	t2, 8(rd)
@@ -249,17 +271,19 @@ ENTRY(pagezero)
  *         %r3,        %r4,    %r5
  */
 ENTRY(copyout)
-	PROLOGUE	
-	SET_COPYFAULT rpcb=%r7
+	PROLOGUE
+	SET_COPYFAULT raddr=%r4 rpcb=%r7
 	bl bcopy_generic 
-	CLEAR_FAULT rpcb=%r7
+	nop
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 
 ENTRY(copyin)
-	PROLOGUE	
-	SET_COPYFAULT rpcb=%r7
+	PROLOGUE
+	SET_COPYFAULT raddr=%r3 rpcb=%r7
 	bl bcopy_generic
-	CLEAR_FAULT rpcb=%r7
+	nop
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 /*
  * copyinstr(const void *udaddr, void *kaddr, size_t len, size_t *done)
@@ -268,100 +292,126 @@ ENTRY(copyin)
  */
 	
 ENTRY(copyinstr)
-	PROLOGUE	
-	SET_COPYFAULT rpcb=%r7
-	li	%r8, 0
-	cmplwi	0, %r5, 0
-	beq	1f
-
-	mtctr	%r5
+	PROLOGUE
+	SET_COPYFAULT raddr=%r3 rpcb=%r7
+	addi	%r9, %r5, 1
+	mtctr	%r9
+	mr	%r8, %r3
+	addi	%r8, %r8, -1
+	addi	%r4, %r4, -1
+	li	%r3, ENAMETOOLONG
 0:
-	addi	%r8, %r8, 1
-	lbz	%r0, 0(%r3)
-	stb	%r0, 0(%r4)
+	bdz-	2f
+	lbzu	%r0, 1(%r8)
+	stbu	%r0, 1(%r4)
 
 	// NULL byte reached ?
-	cmplwi	0, %r0, 0
-	beq	1f
-	
-	addi	%r3, %r3, 1
-	addi	%r4, %r4, 1
-	bdnz	0b
+	cmpdi	%r0, 0
+	beq-	1f
+	b	0b
 1:
-	std	%r8, 0(%r6)
 	li	%r3, 0
-	CLEAR_FAULT rpcb=%r7
+2:
+	/* skip storing length if done is NULL */
+	cmpdi	%r6, 0
+	beq-	3f
+	mfctr	%r0
+	sub	%r0, %r9, %r0
+	std	%r0, 0(%r6)
+3:
+	CLEAR_FAULT rpcb=%r7 clobber=0
 	EPILOGUE
 
-
 ENTRY(subyte)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
 	stb  %r4, 0(%r3)
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 
 #ifndef __powerpc64__
 ENTRY(suword)
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	stw  %r4, 0(%r3)
+	CLEAR_FAULT rpcb=%r7 clobber=1
+	EPILOGUE
 #endif	
+
 ENTRY(suword32)
 	PROLOGUE
-	SET_FUSUFAULT rpcb=%r7
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
 	stw  %r4, 0(%r3)
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 
 #ifdef __powerpc64__	
-ENTRY(suword)
 ENTRY(suword64)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
 	std  %r4, 0(%r3) 
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=%r7 clobber=1
+	EPILOGUE
+ENTRY(suword)
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	std  %r4, 0(%r3) 
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 #endif	
 	
 ENTRY(fubyte)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
 	lbz %r3, 0(%r3)
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=%r7 clobber=0
 	EPILOGUE
 
 ENTRY(fuword16)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
 	lhz %r3, 0(%r3)
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=%r7 clobber=0
 	EPILOGUE
-
 
 #ifndef __powerpc64__
 ENTRY(fueword)	
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	lwz  %r0,, 0(%r3)
+	stw  %r0,  0(%r4)
+	CLEAR_FAULT rpcb=%r7 clobber=1
+	EPILOGUE
 #endif	
 ENTRY(fueword32)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
-	lwz  %r3, 0(%r3) 
-	CLEAR_FAULT rpcb=%r7
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	lwz  %r0, 0(%r3)
+	stw  %r0,  0(%r4)
+	CLEAR_FAULT rpcb=%r7 clobber=1
 	EPILOGUE
 
 #ifdef __powerpc64__
 ENTRY(fueword)	
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	ld  %r0, 0(%r3)
+	std %r0, 0(%r4)
+	CLEAR_FAULT rpcb=%r7 clobber=0
+	EPILOGUE
+
 ENTRY(fueword64)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
-	ld %r3, 0(%r3)
-	CLEAR_FAULT rpcb=%r7
-	EPILOGUE	
+	PROLOGUE
+	SET_FUSUFAULT raddr=%r3 rpcb=%r7
+	ld  %r0, 0(%r3)
+	std %r0, 0(%r4)
+	CLEAR_FAULT rpcb=%r7 clobber=0
+	EPILOGUE
 #endif
 
-#ifndef __powerpc64__
-ENTRY(casueword)
-#endif	
-ENTRY(casueword32)
-	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+.macro CASUEWORD32 raddr rpcb
+	PROLOGUE
+	SET_FUSUFAULT raddr=\raddr rpcb=\rpcb
 1:
 	lwarx %r0, 0, %r3
 	cmplw %r4, %r0
@@ -372,15 +422,20 @@ ENTRY(casueword32)
 2:
 	stwcx. %r0, 0, %r3       	/* clear reservation (74xx) */
 3:	
-	CLEAR_FAULT rpcb=%r7
+	CLEAR_FAULT rpcb=\rpcb clobber=0
 	EPILOGUE	
+.endm
 	
-
-#ifdef __powerpc64__
+#ifndef __powerpc64__
 ENTRY(casueword)
-ENTRY(casueword64)
+	CASUEWORD32 raddr=%r3 rpcb=%r7
+#endif	
+ENTRY(casueword32)
+	CASUEWORD32 raddr=%r3 rpcb=%r7
+
+.macro CASUEWORD64 raddr rpcb
 	PROLOGUE	
-	SET_FUSUFAULT rpcb=%r7
+	SET_FUSUFAULT raddr=\raddr rpcb=\rpcb
 1:
 	ldarx %r0, 0, %r3
 	cmpld %r4, %r0
@@ -391,18 +446,24 @@ ENTRY(casueword64)
 2:
 	stdcx. %r0, 0, %r3       	/* clear reservation (74xx) */
 3:	
-	CLEAR_FAULT rpcb=%r7
-	EPILOGUE	
+	CLEAR_FAULT rpcb=\rpcb clobber=0
+	EPILOGUE
+.endm
+
+#ifdef __powerpc64__
+ENTRY(casueword)
+	CASUEWORD64 raddr=%r3 rpcb=%r7
+
+ENTRY(casueword64)
+	CASUEWORD64 raddr=%r3 rpcb=%r7
 #endif
 	
-fusufault:
-	CLEAR_FAULT rpcb=%r7
+ENTRY(fusufault)
+	CLEAR_FAULT rpcb=%r7 clobber=0
 	li %r3, -1
 	EPILOGUE
-	blr
 
-copy_fault:
-	CLEAR_FAULT rpcb=%r7
+ENTRY(copy_fault)
+	CLEAR_FAULT rpcb=%r7 clobber=0
 	li %r3, EFAULT
 	EPILOGUE
-	blr
