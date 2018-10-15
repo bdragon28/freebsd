@@ -114,7 +114,7 @@
 #define	FREEBSD32_SHAREDPAGE	(VM_MAXUSER_ADDRESS32 - PAGE_SIZE)
 #define	FREEBSD32_USRSTACK	FREEBSD32_SHAREDPAGE
 
-#define	KERNBASE		0x00100100	/* start of kernel virtual */
+#define	KERNBASE		0x00100100UL	/* start of kernel virtual */
 
 #ifdef AIM
 #ifndef __powerpc64__
