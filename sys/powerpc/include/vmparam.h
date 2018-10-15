@@ -98,8 +98,8 @@
 #define	PML0SHIFT			39
 
 #define	VM_MIN_ADDRESS			0x0000000000000000
-#define	VM_MAXUSER_ADDRESS		0x3ffffffffffff000
-#define	VM_MAX_ADDRESS			0xffffffffffffffff
+#define	VM_MAXUSER_ADDRESS		0x000fffffffffffff
+#define	VM_MAX_ADDRESS			0xc00fffffffffffff
 #define	VM_MIN_KERNEL_ADDRESS		0xc008000000000000
 #define	VM_MAX_KERNEL_ADDRESS		0xc00fffffffffffff
 #define	VM_MAX_SAFE_KERNEL_ADDRESS	VM_MAX_KERNEL_ADDRESS
