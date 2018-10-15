@@ -170,19 +170,20 @@ struct pmap {
 		    #ifdef __powerpc64__
 			struct slbtnode	*pm_slb_tree_root;
 			struct slb	**pm_slb;
-			int		pm_slb_len;
 		    #else
 			register_t	pm_sr[16];
 		    #endif
 
 			struct pmap	*pmap_phys;
 			struct pvo_tree pmap_pvo;
+			cpuset_t	pm_active;
+		    #ifdef __powerpc64__
+			int		pm_slb_len;
+		    #endif
 		};
 #ifdef __powerpc64__
 		/* Radix support (ISA 3.0+) */
 		struct {
-			/* PIDR value */
-			uint64_t	pm_pid;
 			/* KVA of root page directory */
 			pml1_entry_t	*pm_pml1;
 			/* spare page table pages */
@@ -190,6 +191,8 @@ struct pmap {
 			/* list of mappings in pmap */
 			TAILQ_HEAD(,pv_chunk)	pm_pvchunk;
 			int pm_flags;
+			/* PIDR value */
+			uint32_t	pm_pid;
 		};
 #endif
 		/* Book-E page tables */
@@ -216,7 +219,6 @@ struct pmap {
 		};
 	};
 	struct		pmap_statistics	pm_stats;
-	cpuset_t	pm_active;
 };
 
 struct pv_entry {
