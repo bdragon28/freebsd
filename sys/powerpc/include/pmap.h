@@ -190,9 +190,9 @@ struct pmap {
 			struct vm_radix		pm_root;
 			/* list of mappings in pmap */
 			TAILQ_HEAD(,pv_chunk)	pm_pvchunk;
-			int pm_flags;
 			/* PIDR value */
-			uint32_t	pm_pid;
+			uint64_t	pm_pid;
+			int pm_flags;
 		};
 #endif
 		/* Book-E page tables */
