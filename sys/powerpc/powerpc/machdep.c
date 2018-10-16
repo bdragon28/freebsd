@@ -129,6 +129,24 @@ __FBSDID("$FreeBSD$");
 #include <dev/ofw/openfirm.h>
 #include <dev/ofw/ofw_subr.h>
 
+/*
+ * The number of PHYSMAP entries must be one less than the number of
+ * PHYSSEG entries because the PHYSMAP entry that spans the largest
+ * physical address that is accessible by ISA DMA is split into two
+ * PHYSSEG entries.
+ */
+#define	PHYSMAP_SIZE	(2 * (VM_PHYSSEG_MAX - 1))
+
+
+vm_paddr_t phys_avail[PHYSMAP_SIZE + 2];
+vm_paddr_t dump_avail[PHYSMAP_SIZE + 2];
+
+#ifdef __powerpc64__
+int disable_radix = 0;
+#else
+int disable_radix = 1;
+#endif
+
 int cold = 1;
 #ifdef __powerpc64__
 int cacheline_size = 128;
@@ -245,6 +263,60 @@ void aim_early_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry,
 void aim_cpu_init(vm_offset_t toc);
 void booke_cpu_init(void);
 
+#ifdef __powerpc64__
+static void
+fake_preload_metadata(void)
+{
+	static uint32_t fake_preload[35];
+#if 0
+#ifdef DDB
+	vm_offset_t zstart = 0, zend = 0;
+#endif
+#endif
+	int i;
+
+	i = 0;
+
+	fake_preload[i++] = MODINFO_NAME;
+	fake_preload[i++] = strlen("kernel") + 1;
+	strcpy((char*)&fake_preload[i++], "kernel");
+	i += 1;
+	fake_preload[i++] = MODINFO_TYPE;
+	fake_preload[i++] = strlen("elf kernel") + 1;
+	strcpy((char*)&fake_preload[i++], "elf kernel");
+	i += 3;
+	fake_preload[i++] = MODINFO_ADDR;
+	fake_preload[i++] = sizeof(vm_offset_t);
+	*(vm_offset_t *)&fake_preload[i++] =
+	    (vm_offset_t)(__startkernel);
+	i += 1;
+	fake_preload[i++] = MODINFO_SIZE;
+	fake_preload[i++] = sizeof(vm_offset_t);
+	fake_preload[i++] = (vm_offset_t)&__endkernel -
+	    (vm_offset_t)(__startkernel);
+	i += 1;
+#ifdef DDB
+#if 0
+	if (*(uint32_t *)KERNVIRTADDR == MAGIC_TRAMP_NUMBER) {
+		fake_preload[i++] = MODINFO_METADATA|MODINFOMD_SSYM;
+		fake_preload[i++] = sizeof(vm_offset_t);
+		fake_preload[i++] = *(uint32_t *)(KERNVIRTADDR + 4);
+		fake_preload[i++] = MODINFO_METADATA|MODINFOMD_ESYM;
+		fake_preload[i++] = sizeof(vm_offset_t);
+		fake_preload[i++] = *(uint32_t *)(KERNVIRTADDR + 8);
+		lastaddr = *(uint32_t *)(KERNVIRTADDR + 8);
+		zend = lastaddr;
+		zstart = *(uint32_t *)(KERNVIRTADDR + 4);
+		db_fetch_ksymtab(zstart, zend);
+	}
+#endif
+#endif
+	fake_preload[i++] = 0;
+	fake_preload[i] = 0;
+	preload_metadata = (void *)fake_preload;
+}
+#endif
+ 
 uintptr_t
 powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
     uint32_t mdp_cookie)
@@ -253,7 +325,8 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	struct cpuref	bsp;
 	vm_offset_t	startkernel, endkernel;
 	char		*env;
-        bool		ofw_bootargs = false;
+	void	*kmdp = NULL;
+	bool	ofw_bootargs = false;
 #ifdef DDB
 	vm_offset_t ksym_start;
 	vm_offset_t ksym_end;
@@ -291,7 +364,6 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	 * boothowto.
 	 */
 	if (mdp != NULL) {
-		void *kmdp = NULL;
 		char *envp = NULL;
 		uintptr_t md_offset = 0;
 		vm_paddr_t kernelendphys;
@@ -332,9 +404,14 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 #endif
 		}
 	} else {
+#ifdef __powerpc64__
+		fake_preload_metadata();
+		kmdp = preload_search_by_type("elf kernel");
+#endif
 		init_static_kenv(init_kenv, sizeof(init_kenv));
 		ofw_bootargs = true;
 	}
+
 	/* Store boot environment state */
 	OF_initial_setup((void *)fdt, NULL, (int (*)(void *))ofentry);
 
@@ -410,8 +487,12 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	 * Bring up MMU
 	 */
 	pmap_bootstrap(startkernel, endkernel);
+	if (bootverbose)
+		printf("enabling translation\n");
 	mtmsr(psl_kernset & ~PSL_EE);
-
+#ifdef __powerpc64__
+	link_elf_ireloc(kmdp);
+#endif
 	/*
 	 * Initialize params/tunables that are derived from memsize
 	 */
@@ -420,23 +501,23 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	/*
 	 * Grab booted kernel's name
 	 */
-        env = kern_getenv("kernelname");
-        if (env != NULL) {
+	env = kern_getenv("kernelname");
+	if (env != NULL) {
 		strlcpy(kernelname, env, sizeof(kernelname));
 		freeenv(env);
 	}
-
 	/*
 	 * Finish setting up thread0.
 	 */
 	thread0.td_pcb = (struct pcb *)
 	    ((thread0.td_kstack + thread0.td_kstack_pages * PAGE_SIZE -
-	    sizeof(struct pcb)) & ~15UL);
+		  sizeof(struct pcb)) & ~15UL);
 	bzero((void *)thread0.td_pcb, sizeof(struct pcb));
 	pc->pc_curpcb = thread0.td_pcb;
-
 	/* Initialise the message buffer. */
 	msgbufinit(msgbufp, msgbufsize);
+	if (bootverbose)
+		printf("%s done\n", __func__);
 
 #ifdef KDB
 	if (boothowto & RB_KDB)

@@ -33,7 +33,7 @@
 
 #ifndef _LOCORE
 #define	mtspr(reg, val)							\
-	__asm __volatile("mtspr %0,%1" : : "K"(reg), "r"(val))
+	__asm __volatile("mtspr %0,%1" : : "K"(reg), "r"((unsigned long)val))
 #define	mfspr(reg)							\
 	( { register_t val;						\
 	  __asm __volatile("mfspr %0,%1" : "=r"(val) : "K"(reg));	\
@@ -91,6 +91,12 @@
  * 6 for 6xx/7xx series and 8 for 8xx and 8xxx series.
  */
 
+#ifdef CONFIG_40X
+#define	SPR_PID			0x3b1	/* 4.. Process ID */
+#else
+#define	SPR_PID			0x30	/* 4.. Process ID */
+#endif
+
 #define	SPR_MQ			0x000	/* .6. 601 MQ register */
 #define	SPR_XER			0x001	/* 468 Fixed Point Exception Register */
 #define	SPR_RTCU_R		0x004	/* .6. 601 RTC Upper - Read */
@@ -117,7 +123,14 @@
 #define	  SRR1_ISI_PFAULT	0x40000000 /* ISI page not found */
 #define	  SRR1_ISI_NOEXECUTE	0x10000000 /* Memory marked no-execute */
 #define	  SRR1_ISI_PP		0x08000000 /* PP bits forbid access */
+#define SPR_CFAR	0x1c	/* Come From Address Register */
+#define SPR_AMR	0x1d	/* Authority Mask Register */
+#define SPR_UAMOR	0x9d	/* User Authority Mask Override Register */
+#define SPR_AMOR	0x15d	/* Authority Mask Override Register */
+
 #define	SPR_DECAR		0x036	/* ..8 Decrementer auto reload */
+#define SPR_IAMR	0x03D		/* Instr. Authority Mask Reg */
+
 #define	SPR_EIE			0x050	/* ..8 Exception Interrupt ??? */
 #define	SPR_EID			0x051	/* ..8 Exception Interrupt ??? */
 #define	SPR_NRI			0x052	/* ..8 Exception Interrupt ??? */
@@ -240,7 +253,10 @@
 #define	  LPCR_PECE_EXT           (1ULL << 14) /* External exceptions */
 #define	  LPCR_PECE_DECR          (1ULL << 13) /* Decrementer exceptions */
 #define	  LPCR_PECE_ME            (1ULL << 12) /* Machine Check and Hypervisor */
-                                               /* Maintenance exceptions */
+#define   LPCR_UPRT				0x0000000000400000UL      /* Use Process Table (ISA 3) */
+#define   LPCR_HR				0x0000000000100000UL
+
+
 #define	SPR_LPID		0x13f	/* Logical Partitioning Control */
 
 #define	SPR_PTCR		0x1d0	/* Partition Table Control Register */
@@ -419,7 +435,7 @@
 #define	SPR_MMCR2		0x3b0	/* .6. Monitor Mode Control Register 2 */
 #define	  SPR_MMCR2_THRESHMULT_32	  0x80000000 /* Multiply MMCR0 threshold by 32 */
 #define	  SPR_MMCR2_THRESHMULT_2	  0x00000000 /* Multiply MMCR0 threshold by 2 */
-#define	SPR_PID			0x3b1	/* 4.. Process ID */
+
 #define	SPR_PMC5		0x3b1	/* .6. Performance Counter Register 5 */
 #define	SPR_PMC6		0x3b2	/* .6. Performance Counter Register 6 */
 #define	SPR_CCR0		0x3b3	/* 4.. Core Configuration Register 0 */

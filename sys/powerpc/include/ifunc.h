@@ -1,8 +1,9 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
- *
- * Copyright (c) 1998 Doug Rabson
+ * Copyright (c) 2015-2018 The FreeBSD Foundation
  * All rights reserved.
+ *
+ * This software was developed by Konstantin Belousov <kib@FreeBSD.org>
+ * under sponsorship from the FreeBSD Foundation.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -16,7 +17,7 @@
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -28,53 +29,22 @@
  * $FreeBSD$
  */
 
-#ifndef _MACHINE_MD_VAR_H_
-#define	_MACHINE_MD_VAR_H_
+#ifndef __POWERPC_IFUNC_H
+#define	__POWERPC_IFUNC_H
 
-/*
- * Miscellaneous machine-dependent declarations.
- */
+#define	DEFINE_IFUNC(qual, ret_type, name, args, resolver_qual)		\
+    resolver_qual ret_type (*name##_resolver(void))args __used;		\
+    qual ret_type name args __attribute__((ifunc(#name "_resolver")));	\
+    resolver_qual ret_type (*name##_resolver(void))args
 
-extern	char	sigcode32[];
-extern	int	szsigcode32;
+#define	DEFINE_UIFUNC(qual, ret_type, name, args, resolver_qual)	\
+    resolver_qual ret_type (*name##_resolver(uint32_t, uint32_t,	\
+	uint32_t, uint32_t))args __used;				\
+    qual ret_type name args __attribute__((ifunc(#name "_resolver")));	\
+    resolver_qual ret_type (*name##_resolver(				\
+	uint32_t cpu_feature __unused,					\
+	uint32_t cpu_feature2 __unused,					\
+	uint32_t cpu_stdext_feature __unused,				\
+	uint32_t cpu_stdext_feature2 __unused))args
 
-#ifdef __powerpc64__
-extern uint64_t	*vm_page_dump;
-extern int	vm_page_dump_size;
-extern	char	sigcode64[], sigcode64_elfv2[];
-extern	int	szsigcode64, szsigcode64_elfv2;
 #endif
-
-extern	long	Maxmem;
-extern	int	busdma_swi_pending;
-
-extern	vm_offset_t	kstack0;
-extern	vm_offset_t	kstack0_phys;
-
-extern	int powerpc_pow_enabled;
-extern	int cacheline_size;
-extern  int hw_direct_map;
-
-void	__syncicache(void *, int);
-
-void	busdma_swi(void);
-int	is_physical_memory(vm_offset_t addr);
-int	mem_valid(vm_offset_t addr, int len);
-
-void	decr_init(void);
-void	decr_ap_init(void);
-void	decr_tc_init(void);
-
-void	cpu_feature_setup(void);
-void	cpu_setup(u_int);
-
-struct	trapframe;
-struct	dumperinfo;
-void	powerpc_interrupt(struct trapframe *);
-
-void	dump_add_page(vm_paddr_t);
-void	dump_drop_page(vm_paddr_t);
-#define PPC64_OPTIMIZED_PAGEZERO
-void	pagezero(void *);
-int	minidumpsys(struct dumperinfo *);
-#endif /* !_MACHINE_MD_VAR_H_ */

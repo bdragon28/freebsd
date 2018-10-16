@@ -73,6 +73,8 @@ __FBSDID("$FreeBSD$");
 #include <machine/spr.h>
 #include <machine/sr.h>
 
+#define DEBUGGING
+
 /* Below matches setjmp.S */
 #define	FAULTBUF_LR	21
 #define	FAULTBUF_R1	1
@@ -203,7 +205,7 @@ trap(struct trapframe *frame)
 #ifdef KDTRACE_HOOKS
 	uint32_t inst;
 #endif
-	int		sig, type, user;
+	int		sig, type, user, rv;
 	u_int		ucode;
 	ksiginfo_t	ksi;
 	register_t 	fscr;
@@ -271,7 +273,11 @@ trap(struct trapframe *frame)
 #endif
 		case EXC_DSI:
 		case EXC_ISI:
+			if (td->td_pflags & TDP_UNUSED9)
+				trap_fatal(frame);
+			td->td_pflags |= TDP_UNUSED9;
 			sig = trap_pfault(frame, 1);
+			td->td_pflags &= ~TDP_UNUSED9;
 			if (sig == SIGSEGV)
 				ucode = SEGV_MAPERR;
 			break;
@@ -432,8 +438,14 @@ trap(struct trapframe *frame)
 			break;
 #endif
 		case EXC_DSI:
-			if (trap_pfault(frame, 0) == 0)
+			if (td->td_pflags & TDP_UNUSED9)
+				trap_fatal(frame);
+			td->td_pflags |= TDP_UNUSED9;
+			rv = trap_pfault(frame, 0);
+			td->td_pflags &= ~TDP_UNUSED9;
+			if (rv == 0)
  				return;
+
 			break;
 		case EXC_MCHK:
 			if (handle_onfault(frame))
@@ -552,6 +564,11 @@ printtrap(u_int vector, struct trapframe *frame, int isfatal, int user)
 	printf("\n");
 }
 
+#ifdef __powerpc64__
+extern int copy_fault(void);
+extern int fusufault(void);
+#endif
+
 /*
  * Handles a fatal fault when we have onfault state to recover.  Returns
  * non-zero if there was onfault recovery state available.
@@ -559,9 +576,27 @@ printtrap(u_int vector, struct trapframe *frame, int isfatal, int user)
 static int
 handle_onfault(struct trapframe *frame)
 {
-	struct		thread *td;
-	jmp_buf		*fb;
+	struct          thread *td;
+	jmp_buf         *fb;
 
+#ifdef __powerpc64__	
+	if (disable_radix == 0) {
+		uint64_t dispatch = (uintptr_t)curthread->td_pcb->pcb_onfault;
+		if (__predict_true(dispatch == 0))
+			return (0);
+		switch (dispatch) {
+			case COPYFAULT:
+				frame->srr0 = (uintptr_t)copy_fault;
+				break;
+			case FUSUFAULT:
+				frame->srr0 = (uintptr_t)fusufault;
+				break;
+			default:
+				panic("unrecognized fault code %lx\n", dispatch);
+		}
+		return (1);
+	}
+#endif
 	td = curthread;
 	fb = td->td_pcb->pcb_onfault;
 	if (fb != NULL) {
@@ -571,9 +606,10 @@ handle_onfault(struct trapframe *frame)
 		frame->fixreg[3] = 1;
 		frame->cr = (*fb)->_jb[FAULTBUF_CR];
 		bcopy(&(*fb)->_jb[FAULTBUF_R14], &frame->fixreg[14],
-		    18 * sizeof(register_t));
+			  18 * sizeof(register_t));
 		td->td_pcb->pcb_onfault = NULL; /* Returns twice, not thrice */
 		return (1);
+
 	}
 	return (0);
 }
@@ -786,6 +822,7 @@ trap_pfault(struct trapframe *frame, int user)
 
 	td = curthread;
 	p = td->td_proc;
+
 	if (frame->exc == EXC_ISI) {
 		eva = frame->srr0;
 		ftype = VM_PROT_EXECUTE;
@@ -802,7 +839,34 @@ trap_pfault(struct trapframe *frame, int user)
 		else
 			ftype = VM_PROT_READ;
 	}
+#ifdef __powerpc64__
+	if (__predict_true(disable_radix == false) &&
+		pmap_nofault(&p->p_vmspace->vm_pmap, eva, ftype) == 0)
+		return (0);
 
+	if (__predict_false((td->td_pflags & TDP_NOFAULTING) == 0)) {
+		/*
+		 * If we get a page fault while in a critical section, then
+		 * it is most likely a fatal kernel page fault.  The kernel
+		 * is already going to panic trying to get a sleep lock to
+		 * do the VM lookup, so just consider it a fatal trap so the
+		 * kernel can print out a useful trap message and even get
+		 * to the debugger.
+		 *
+		 * If we get a page fault while holding a non-sleepable
+		 * lock, then it is most likely a fatal kernel page fault.
+		 * If WITNESS is enabled, then it's going to whine about
+		 * bogus LORs with various VM locks, so just skip to the
+		 * fatal trap handling directly.
+		 */
+		if (td->td_critnest != 0 ||
+			WITNESS_CHECK(WARN_SLEEPOK | WARN_GIANTOK, NULL,
+				"Kernel page fault") != 0) {
+			trap_fatal(frame);
+			return (-1);
+		}
+	}
+#endif
 	if (user) {
 		KASSERT(p->p_vmspace != NULL, ("trap_pfault: vmspace  NULL"));
 		map = &p->p_vmspace->vm_map;
@@ -826,11 +890,13 @@ trap_pfault(struct trapframe *frame, int user)
 
 	if (rv == KERN_SUCCESS)
 		return (0);
-
 	if (!user && handle_onfault(frame))
 		return (0);
-
-	return (SIGSEGV);
+#ifdef DEBUGGING
+	printf("%s vm_fault=>rv = %d -- unhandled\n", __func__, rv);
+	trap_fatal(frame);
+#endif
+	return ((rv == KERN_PROTECTION_FAILURE) ? SIGBUS : SIGSEGV);
 }
 
 /*

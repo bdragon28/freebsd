@@ -277,10 +277,10 @@ elf64_dump_thread(struct thread *td, void *dst, size_t *off)
 }
 
 bool
-elf_is_ifunc_reloc(Elf_Size r_info __unused)
+elf_is_ifunc_reloc(Elf_Size r_info)
 {
 
-	return (false);
+	return (ELF_R_TYPE(r_info) == R_PPC64_IRELATIVE);
 }
 
 /* Process one elf relocation with addend. */
@@ -290,7 +290,7 @@ elf_reloc_internal(linker_file_t lf, Elf_Addr relocbase, const void *data,
 {
 	Elf_Addr *where;
 	Elf_Addr addr;
-	Elf_Addr addend;
+	Elf_Addr addend, val;
 	Elf_Word rtype, symidx;
 	const Elf_Rela *rela;
 	int error;
@@ -336,7 +336,12 @@ elf_reloc_internal(linker_file_t lf, Elf_Addr relocbase, const void *data,
 #endif
 		__asm __volatile("dcbst 0,%0; sync" :: "r"(where) : "memory");
 		break;
-
+	 case R_PPC64_IRELATIVE:
+		 addr = relocbase + addend;
+		 val = ((Elf64_Addr (*)(void))addr)();
+		 if (*where != val)
+			 *where = val;
+		 break;
 	default:
 		printf("kldload: unexpected relocation type %d\n",
 		    (int) rtype);
