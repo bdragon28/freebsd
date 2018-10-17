@@ -758,9 +758,9 @@ trap_pfault(struct trapframe *frame, bool user, int *signo, int *ucode)
 		else
 			ftype = VM_PROT_READ;
 	}
-	printf("%s user=%d ftype=%x eva=%lx\n",
-		   __func__, user, ftype, eva);
-	
+#if 0
+	printtrap(frame->exc, frame, 0, user);
+#endif
 	if (user) {
 		KASSERT(p->p_vmspace != NULL, ("trap_pfault: vmspace  NULL"));
 		map = &p->p_vmspace->vm_map;
