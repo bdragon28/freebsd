@@ -161,8 +161,8 @@ RB_PROTOTYPE(pvo_tree, pvo_entry, pvo_plink, pvo_vaddr_compare);
 #define	PVO_VSID(pvo)		((pvo)->pvo_vpn >> 16)
 
 struct pmap {
-	struct	mtx	pm_mtx;
-	uint8_t pm_pad[CACHE_LINE_SIZE-sizeof(struct mtx)];
+	struct		pmap_statistics	pm_stats;
+	struct	mtx	pm_mtx __aligned(CACHE_LINE_SIZE);
 	union {
 		/* HPT support (32 or 64 bit) */
 		struct {
@@ -218,7 +218,6 @@ struct pmap {
 #endif
 		};
 	};
-	struct		pmap_statistics	pm_stats;
 };
 
 struct pv_entry {
@@ -354,6 +353,7 @@ extern	int pmap_bootstrapped;
 vm_offset_t pmap_early_io_map(vm_paddr_t pa, vm_size_t size);
 void pmap_early_io_unmap(vm_offset_t va, vm_size_t size);
 void pmap_track_page(pmap_t pmap, vm_offset_t va);
+void pmap_page_print_mappings(vm_page_t m);
 
 static inline int
 pmap_vmspace_copy(pmap_t dst_pmap __unused, pmap_t src_pmap __unused)
