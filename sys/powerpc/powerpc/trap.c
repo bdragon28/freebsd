@@ -261,6 +261,7 @@ trap(struct trapframe *frame)
 #if defined(__powerpc64__) && defined(AIM)
 		case EXC_ISE:
 		case EXC_DSE:
+			trap_fatal(frame);
 			if (handle_user_slb_spill(&p->p_vmspace->vm_pmap,
 			    (type == EXC_ISE) ? frame->srr0 : frame->dar) != 0){
 				sig = SIGSEGV;
@@ -586,8 +587,9 @@ printtrap(u_int vector, struct trapframe *frame, int isfatal, int user)
 	printf("   frame           = %p\n", frame);
 	printf("   curthread       = %p\n", curthread);
 	if (curthread != NULL)
-		printf("          pid = %d, comm = %s\n",
-		    curthread->td_proc->p_pid, curthread->td_name);
+		printf("          pid = %d, comm = %s asid: %lu\n",
+			   curthread->td_proc->p_pid, curthread->td_name,
+			   vmspace_pmap(curthread->td_proc->p_vmspace)->pm_pid);
 	printf("\n");
 }
 
@@ -785,6 +787,7 @@ trap_pfault(struct trapframe *frame, bool user, int *signo, int *ucode)
 		return (true);
 
 	printf("%s vm_fault=>rv = %d\n", __func__, rv);
+	printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
 	if (!user && handle_onfault(frame))
 		return (true);
 
