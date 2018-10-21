@@ -586,7 +586,7 @@ printtrap(u_int vector, struct trapframe *frame, int isfatal, int user)
 	    frame->lr, frame->lr - (register_t)(__startkernel - KERNBASE));
 	printf("   frame           = %p\n", frame);
 	printf("   curthread       = %p\n", curthread);
-	if (curthread != NULL)
+	if (!cold && curthread != NULL)
 		printf("          pid = %d, comm = %s asid: %lu\n",
 			   curthread->td_proc->p_pid, curthread->td_name,
 			   vmspace_pmap(curthread->td_proc->p_vmspace)->pm_pid);
