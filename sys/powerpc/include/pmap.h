@@ -162,7 +162,7 @@ RB_PROTOTYPE(pvo_tree, pvo_entry, pvo_plink, pvo_vaddr_compare);
 
 struct pmap {
 	struct		pmap_statistics	pm_stats;
-	struct	mtx	pm_mtx __aligned(CACHE_LINE_SIZE);
+	struct	mtx	pm_mtx;
 	union {
 		/* HPT support (32 or 64 bit) */
 		struct {
@@ -217,7 +217,7 @@ struct pmap {
 			TAILQ_HEAD(, ptbl_buf)	pm_ptbl_list;
 #endif
 		};
-	};
+	} __aligned(CACHE_LINE_SIZE);
 };
 
 struct pv_entry {
