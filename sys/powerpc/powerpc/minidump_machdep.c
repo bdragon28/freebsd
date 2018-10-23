@@ -384,7 +384,7 @@ retry:
 			if (is_dumpable(pa))
 				dump_add_page(pa);
 			/* and for each valid page in this 2MB block */
-			for (; vatmp < va_next; va += PAGE_SIZE) {
+			for (; vatmp < va_next; vatmp += PAGE_SIZE) {
 				if ((*pte & PG_V) == 0)
 					continue;
 				pa = *pte & PG_FRAME;
