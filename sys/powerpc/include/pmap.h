@@ -264,11 +264,7 @@ struct	md_page {
 
 #ifdef AIM
 #define	pmap_page_get_memattr(m)	((m)->md.mdpg_cache_attrs)
-#if 0
-#define	pmap_page_is_mapped(m)	(!LIST_EMPTY(&(m)->md.mdpg_pvoh))
-#else
 boolean_t pmap_page_is_mapped(vm_page_t m);
-#endif
 #else
 #define	pmap_page_get_memattr(m)	VM_MEMATTR_DEFAULT
 #define	pmap_page_is_mapped(m)	(!TAILQ_EMPTY(&(m)->md.pv_list))
