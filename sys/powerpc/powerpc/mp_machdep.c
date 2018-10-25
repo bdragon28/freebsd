@@ -76,6 +76,10 @@ machdep_ap_bootstrap(void)
 	PCPU_SET(awake, 1);
 	__asm __volatile("msync; isync");
 
+#ifdef __powerpc64__ 
+	while (ap_letgo == 0)
+		__asm __volatile("or 31, 31, 31");
+#else
 	while (ap_letgo == 0)
 		nop_prio_vlow();
 	nop_prio_medium();
