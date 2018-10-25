@@ -73,6 +73,8 @@ __FBSDID("$FreeBSD$");
 #include <machine/spr.h>
 #include <machine/sr.h>
 
+#define DEBUGGING
+
 /* Below matches setjmp.S */
 #define	FAULTBUF_LR	21
 #define	FAULTBUF_R1	1
@@ -825,6 +827,7 @@ trap_pfault(struct trapframe *frame, int user)
 
 	td = curthread;
 	p = td->td_proc;
+
 	if (frame->exc == EXC_ISI) {
 		eva = frame->srr0;
 		ftype = VM_PROT_EXECUTE;
@@ -841,8 +844,33 @@ trap_pfault(struct trapframe *frame, int user)
 		else
 			ftype = VM_PROT_READ;
 	}
-#if 0
-	printtrap(frame->exc, frame, 0, user);
+#ifdef __powerpc64__
+	if (__predict_true(disable_radix == false) &&
+		pmap_nofault(&p->p_vmspace->vm_pmap, eva, ftype) == 0)
+		return (0);
+
+	if (__predict_false((td->td_pflags & TDP_NOFAULTING) == 0)) {
+		/*
+		 * If we get a page fault while in a critical section, then
+		 * it is most likely a fatal kernel page fault.  The kernel
+		 * is already going to panic trying to get a sleep lock to
+		 * do the VM lookup, so just consider it a fatal trap so the
+		 * kernel can print out a useful trap message and even get
+		 * to the debugger.
+		 *
+		 * If we get a page fault while holding a non-sleepable
+		 * lock, then it is most likely a fatal kernel page fault.
+		 * If WITNESS is enabled, then it's going to whine about
+		 * bogus LORs with various VM locks, so just skip to the
+		 * fatal trap handling directly.
+		 */
+		if (td->td_critnest != 0 ||
+			WITNESS_CHECK(WARN_SLEEPOK | WARN_GIANTOK, NULL,
+				"Kernel page fault") != 0) {
+			trap_fatal(frame);
+			return (-1);
+		}
+	}
 #endif
 	if (user) {
 		KASSERT(p->p_vmspace != NULL, ("trap_pfault: vmspace  NULL"));
@@ -867,13 +895,13 @@ trap_pfault(struct trapframe *frame, int user)
 
 	if (rv == KERN_SUCCESS)
 		return (0);
-
-	printf("%s vm_fault=>rv = %d\n", __func__, rv);
-	printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
 	if (!user && handle_onfault(frame))
 		return (0);
-
-	return (SIGSEGV);
+#ifdef DEBUGGING
+	printf("%s vm_fault=>rv = %d -- unhandled\n", __func__, rv);
+	trap_fatal(frame);
+#endif
+	return ((rv == KERN_PROTECTION_FAILURE) ? SIGBUS : SIGSEGV);
 }
 
 /*
