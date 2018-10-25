@@ -79,7 +79,7 @@ machdep_ap_bootstrap(void)
 
 	while (ap_letgo == 0)
 		__asm __volatile("or 31,31,31");
-	__asm __volatile("or 6,6,6");
+	__asm __volatile("or 2, 2, 2");
 
 	/*
 	 * Set timebase as soon as possible to meet an implicit rendezvous
