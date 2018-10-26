@@ -201,9 +201,29 @@ decr_intr(struct trapframe *frame)
 void
 cpu_initclocks(void)
 {
+#ifdef EARLY_AP_STARTUP
+	struct thread *td;
+	int i;
 
+	td = curthread;
 	decr_tc_init();
 	cpu_initclocks_bsp();
+	CPU_FOREACH(i) {
+		if (i == 0)
+			continue;
+		thread_lock(td);
+		sched_bind(td, i);
+		thread_unlock(td);
+		cpu_initclocks_ap();
+	}
+	thread_lock(td);
+	if (sched_is_bound(td))
+		sched_unbind(td);
+	thread_unlock(td);
+#else
+	decr_tc_init();
+	cpu_initclocks_bsp();
+#endif
 }
 
 /*
@@ -347,13 +367,15 @@ decr_get_timecount(struct timecounter *tc)
 void
 DELAY(int n)
 {
-	u_quad_t	tb, ttb;
+	u_quad_t	ttb;
 
 	TSENTER();
-	tb = mftb();
-	ttb = tb + howmany((uint64_t)n * 1000000, ps_per_tick);
-	while (tb < ttb)
-		tb = mftb();
+	ttb = mftb() + howmany((uint64_t)n * 1000000, ps_per_tick);
+	while (mftb() < ttb) {
+		__compiler_membar();
+		HMT_very_low(); /* Very Low - 1 fetch every 128 cycles */
+	}
+	HMT_medium(); /* Medium (Normal) priority */
 	TSEXIT();
 }
 
