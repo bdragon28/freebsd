@@ -310,8 +310,11 @@ DELAY(int n)
 	tb = mftb();
 	ttb = tb + howmany((uint64_t)n * 1000000, ps_per_tick);
 	nop_prio_vlow();
-	while (tb < ttb)
+	while (tb < ttb) {
+		__compiler_membar();
 		tb = mftb();
+		__compiler_membar();
+	}
 	nop_prio_medium();
 	TSEXIT();
 }
