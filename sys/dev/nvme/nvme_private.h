@@ -347,7 +347,11 @@ struct nvme_controller {
 #define nvme_mmio_write_4(sc, reg, val)					       \
 	bus_space_write_4((sc)->bus_tag, (sc)->bus_handle,		       \
 	    nvme_mmio_offsetof(reg), val)
-
+#ifdef __LP64__
+#define nvme_mmio_write_8(sc, reg, val)					       \
+	bus_space_write_8((sc)->bus_tag, (sc)->bus_handle,		       \
+	    nvme_mmio_offsetof(reg), val)
+#else
 #define nvme_mmio_write_8(sc, reg, val)					       \
 	do {								       \
 		bus_space_write_4((sc)->bus_tag, (sc)->bus_handle,	       \
@@ -356,6 +360,7 @@ struct nvme_controller {
 		    nvme_mmio_offsetof(reg)+4,				       \
 		    (val & 0xFFFFFFFF00000000ULL) >> 32);		       \
 	} while (0);
+#endif
 
 #define nvme_printf(ctrlr, fmt, args...)	\
     device_printf(ctrlr->dev, fmt, ##args)
