@@ -246,7 +246,6 @@ struct pv_chunk {
 	PV_CHUNK_HEADER
 	struct pv_entry		pc_pventry[_NPCPV];
 };
-CTASSERT(sizeof(struct pv_chunk) == PAGE_SIZE);
 
 struct	md_page {
 	vm_memattr_t	 mdpg_cache_attrs;
