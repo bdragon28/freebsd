@@ -849,7 +849,7 @@ trap_pfault(struct trapframe *frame, bool user, int *signo, int *ucode)
 
 #ifdef DEBUGGING
 	printf("%s vm_fault=>rv = %d -- unhandled\n", __func__, rv);
-	trap_fatal(frame);
+	printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
 #endif
 	/*
 	 * XXX bdragon: Need to double check that the ucode is being set.
