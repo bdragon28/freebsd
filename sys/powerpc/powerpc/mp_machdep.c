@@ -77,9 +77,11 @@ machdep_ap_bootstrap(void)
 	PCPU_SET(awake, 1);
 	__asm __volatile("msync; isync");
 
-	while (ap_letgo == 0)
-		__asm __volatile("or 31,31,31");
-	__asm __volatile("or 2, 2, 2");
+	while (ap_letgo == 0) {
+		__compiler_membar();
+		HMT_very_low();
+	}
+	HMT_medium();
 
 	/*
 	 * Set timebase as soon as possible to meet an implicit rendezvous
@@ -107,9 +109,11 @@ machdep_ap_bootstrap(void)
 		    PCPU_GET(cpuid), ap_awake == mp_ncpus ? "\n" : " ");
 	mtx_unlock_spin(&ap_boot_mtx);
 
-	while(smp_started == 0)
-		;
-
+	while(smp_started == 0) {
+		__compiler_membar();
+		HMT_very_low();
+	}
+	HMT_medium();
 	/* Start per-CPU event timers. */
 	cpu_initclocks_ap();
 
@@ -262,8 +266,11 @@ cpu_mp_unleash(void *dummy)
 
 	platform_smp_timebase_sync(ap_timebase, 0);
 
-	while (ap_awake < smp_cpus)
-		;
+	while (ap_awake < smp_cpus) {
+		__compiler_membar();
+		HMT_very_low();
+	}
+	HMT_medium();
 
 	if (smp_cpus != cpus || cpus != mp_ncpus) {
 		printf("SMP: %d CPUs found; %d CPUs usable; %d CPUs woken\n",
@@ -274,7 +281,7 @@ cpu_mp_unleash(void *dummy)
 		atomic_store_rel_int(&smp_started, 1);
 
 	/* Let the APs get into the scheduler */
-	DELAY(10000);
+	DELAY(1000);
 
 }
 
