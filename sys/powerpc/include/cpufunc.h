@@ -293,6 +293,12 @@ nop_prio_high(void)
 	__asm __volatile("or 3,3,3");
 }
 
+static __inline void
+xnop(void)
+{
+	__asm __volatile("xori 0,0,0");
+}
+
 #endif /* _KERNEL */
 
 #endif /* !_MACHINE_CPUFUNC_H_ */
