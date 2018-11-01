@@ -41,11 +41,8 @@
 #error "Do not include machine/pcpu_aux.h directly"
 #endif
 
-/*
- * To minimize memory waste in per-cpu UMA zones, the page size should
- * be a multiple of the size of struct pcpu.
- */
-_Static_assert(PAGE_SIZE % sizeof(struct pcpu) == 0, "fix pcpu size");
+/* Required for counters(9) to work on powerpc. */
+_Static_assert(sizeof(struct pcpu) == UMA_PCPU_ALLOC_SIZE, "fix pcpu size");
 
 extern struct pcpu __pcpu[];
 
