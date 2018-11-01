@@ -121,6 +121,11 @@ SYSCTL_INT(_vm_pmap, OID_AUTO, pmap_logging, CTLFLAG_RWTUN,
 
 static u_int64_t	KPTphys;	/* phys addr of kernel level 1 */
 
+#define PPC_NOP		0x60000000
+extern uint32_t u_trap_overwrite, ast_frame_leave, dbleave_frame_leave;
+extern uint32_t dbtrap_frame_leave, cpu_switch_pmap_deactivate;
+extern uint32_t realtrap_overwrite;
+
 //static vm_paddr_t	KERNend;	/* phys addr of end of bootstrap data */
 
 static vm_offset_t qframe = 0;
@@ -2072,6 +2077,24 @@ METHOD(bootstrap) vm_offset_t start, vm_offset_t end)
 	if (bootverbose)
 		printf("%s done\n", __func__);
 	pmap_bootstrapped = 1;
+
+	/*
+	 * patch
+	 */
+
+	cpu_switch_pmap_deactivate = PPC_NOP;
+	__syncicache(&cpu_switch_pmap_deactivate, 0x80);
+	ast_frame_leave = PPC_NOP;
+	__syncicache(&ast_frame_leave, 0x80);
+	dbleave_frame_leave = PPC_NOP;
+	__syncicache(&dbleave_frame_leave, 0x80);
+	dbtrap_frame_leave = PPC_NOP;
+	__syncicache(&dbtrap_frame_leave, 0x80);
+
+	u_trap_overwrite = PPC_NOP;
+	__syncicache(&u_trap_overwrite, 0x80);
+	realtrap_overwrite = PPC_NOP;
+	__syncicache(&realtrap_overwrite, 0x80);
 }
 
 VISIBILITY void
