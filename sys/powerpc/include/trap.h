@@ -150,6 +150,29 @@
 #define TRAP_GENTRAP	0x1f0
 #define TRAP_TOCBASE	0x1f8
 
+
+/*
+ * intr_flags:
+ */
+#define	PPC_INTR_DISABLE	0x001
+
+/*
+ * intr_pend_flags
+ */
+#define	PPC_DECR_PEND		0x001
+#define	PPC_HVI_PEND		0x002
+#define	PPC_EXI_PEND		0x004
+#define	PPC_PEND_MASK		(PPC_DECR_PEND|PPC_HVI_PEND|PPC_EXI_PEND)
+
+/*
+ * nmi_flags
+ */
+#define	PPC_NMI_ENA		(0x001 << 8)
+#define	PPC_DECR_SAMPLE		(0x002 << 8)
+#define	PPC_NMI_HANDLED		(0x004 << 8)
+#define	PPC_DECR_SAMPLED   	(0x008 << 8)
+
+
 #ifndef LOCORE
 struct	trapframe;
 struct	pcb;
