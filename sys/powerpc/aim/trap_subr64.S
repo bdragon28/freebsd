@@ -39,6 +39,7 @@
  *	#include <powerpc/aim/trap_subr.S>
  */
 
+#include <sys/limits.h>
 /* Locate the per-CPU data structure */
 #define GET_CPUINFO(r)  \
         mfsprg0  r
@@ -435,6 +436,42 @@ cpu_wakeup_handler:
 
 	rfid
 
+	.globl	CNAME(exi_trapcode),CNAME(exi_trapcodeend)
+	.p2align 3
+CNAME(exi_trapcode):
+	mtsprg1	%r1			/* save SP in SPRG1 */
+	mflr	%r1
+	mtsprg2 %r1			/* save LR in SPRG2 */
+	ld	%r1,TRAP_GENTRAP(0)
+	addi	%r1,%r1,(exitrap-generictrap)
+	mtlr	%r1
+	blrl				/* Branch to exitrap */
+	nop
+CNAME(exi_trapcodeend):
+	.globl	CNAME(hvi_trapcode),CNAME(hvi_trapcodeend)
+	.p2align 3
+CNAME(hvi_trapcode):
+	mtsprg1	%r1			/* save SP in SPRG1 */
+	mflr	%r1
+	mtsprg2 %r1			/* save LR in SPRG2 */
+	ld	%r1,TRAP_GENTRAP(0)
+	addi	%r1,%r1,(hvitrap-generictrap)
+	mtlr	%r1
+	blrl				/* Branch to hvitrap */
+	nop
+CNAME(hvi_trapcodeend):
+	.globl	CNAME(decr_trapcode),CNAME(decr_trapcodeend)
+	.p2align 3
+CNAME(decr_trapcode):
+	mtsprg1	%r1			/* save SP in SPRG1 */
+	mflr	%r1
+	mtsprg2	%r1			/* save LR in SPRG2 */
+	ld	%r1,TRAP_GENTRAP(0)
+	addi	%r1,%r1,(decrtrap-generictrap)
+	mtlr	%r1
+	blrl				/* Branch to decrtrap */
+	nop
+CNAME(decr_trapcodeend):
 /*
  * This code gets copied to all the trap vectors
  * (except ISI/DSI, ALI, and the interrupts). Has to fit in 8 instructions!
@@ -750,6 +787,71 @@ disitrap:
 	b	dbtrap
 #endif
 
+
+/*
+ * overlap state save with the work expected by k_trap
+ */
+.MACRO SAVE_CONTEXT
+	GET_CPUINFO(%r1)
+	std	%r27,(PC_TEMPSAVE+CPUSAVE_R27)(%r1)	/* free r27-r29 */
+	std	%r28,(PC_TEMPSAVE+CPUSAVE_R28)(%r1)
+	std	%r29,(PC_TEMPSAVE+CPUSAVE_R29)(%r1)
+	lbz	%r27, PC_INTR_FLAGS(%r1)
+	mfcr	%r29				/* save CR */
+	lwz	%r28, PC_NMI_FLAGS(%r1)
+	or	%r28, %r28, %r27
+	/* skip trap if INTR_DISABLE is set but NMI flags not set */
+	cmplwi	%r28, PPC_INTR_DISABLE
+.endm
+
+.MACRO K_TRAP_SETUP traptype dohyper
+	std	%r30,(PC_TEMPSAVE+CPUSAVE_R30)(%r1)
+	std	%r31,(PC_TEMPSAVE+CPUSAVE_R31)(%r1)
+	mfsprg2	%r28				/* load LR */
+
+	/* XXX */
+.if \dohyper == 1
+	mfspr	%r27, SPR_HSRR0
+	mtsrr0	%r27
+	mfspr	%r27, SPR_HSRR1
+	mtsrr1	%r27
+.endif
+	/* Test whether we already had PR set */
+	li	%r27, \traptype
+	mfsrr1	%r31
+	mtsprg3	%r27				/* save trap type to SPRG3 */
+	mtcr	%r31
+	bf	17, 10f
+	ld	%r1,PC_CURPCB(%r1)		/* reload pcb pointer for u_trap */
+	/* XXX	support SRS save restore */
+	b	k_trap
+10:	mfsprg1	%r1				/* reload stack pointer for k_trap */
+	b	k_trap
+.endm
+
+/*
+ * check for NMI flags or restore context
+ */
+.MACRO FASTRETURN_SETUP pendflag
+	lbz	%r27, PC_INTR_PEND_FLAGS(%r1)
+	ori	%r27, %r27, \pendflag
+	stb	%r27, PC_INTR_PEND_FLAGS(%r1)
+	b	fastreturn
+.endm
+
+/*
+ * restore cr, lr, r1, and r27-r29
+ */
+fastreturn:
+	mtcr	%r29
+	ld	%r27,(PC_TEMPSAVE+CPUSAVE_R27)(%r1)
+	ld	%r28,(PC_TEMPSAVE+CPUSAVE_R28)(%r1)
+	ld	%r29,(PC_TEMPSAVE+CPUSAVE_R29)(%r1)
+	mfsprg2	%r1
+	mtlr	%r1
+	mfsprg1	%r1
+	rfid
+
 	/* XXX need stack probe here */
 realtrap:
 /* Test whether we already had PR set */
@@ -771,6 +873,52 @@ realtrap_overwrite:
 	mfsprg2	%r29
 	mr	%r28,%r27
 	b	s_trap
+
+
+/*
+ * after SAVE_CONTEXT:
+ * %r1 contains PCPU
+ * %r27 contains intr_flags
+ * %r28 scratch
+ * %r29 contains original CR
+ * CR contains result of checking for PPC_INTR_DISABLE
+ */
+hvitrap:
+	SAVE_CONTEXT
+	beq-	1f
+	K_TRAP_SETUP traptype=EXC_HVI dohyper=1
+1:
+	/* note that an hvitrap was seen */
+	FASTRETURN_SETUP pendflag=PPC_HVI_PEND
+decrtrap:
+	SAVE_CONTEXT
+	/*
+	 * - add residual from decr to PCPU(decr_total)
+	 * - increment PCPU(decr_pend) by 1
+	 * - reset decr to maximum (INT_MAX)
+	 */
+	mfdec	%r28
+	ld	%r27, PC_PEND_DECR_SUM(%r1)
+	add	%r28, %r28, %r27
+	ld	%r27, PC_INTR_DECR_TOTAL(%r1)
+	std	%r28, PC_PEND_DECR_SUM(%r1)
+	addi	%r28, %r27, 1
+	li	%r27, INT_MAX@l
+	lis	%r27, INT_MAX@h
+	std	%r28, PC_INTR_DECR_TOTAL(%r1)
+	mtdec	%r27
+	beq-	1f
+
+	K_TRAP_SETUP traptype=EXC_DECR dohyper=0
+1:
+	FASTRETURN_SETUP pendflag=PPC_DECR_PEND
+exitrap:
+	SAVE_CONTEXT
+	beq-	1f
+	K_TRAP_SETUP traptype=EXC_EXI dohyper=0
+1:
+	FASTRETURN_SETUP pendflag=PPC_EXI_PEND
+
 
 /*
  * generictrap does some standard setup for trap handling to minimize

@@ -40,22 +40,44 @@ struct pmap;
 struct pvo_entry;
 #define	CPUSAVE_LEN	9
 
-#ifndef __powerpc64__
-#define PCPU_PPC_FIELDS							\
-	struct pmap	*pc_curpmap;		/* current pmap */
-#else
-#define PCPU_PPC_FIELDS
-#endif
+#ifdef __powerpc64__
+/*
+ * Key:
+ * intr_pend_flags: bits indicating which interrupts are pending
+ * intr_flags: soft interrupt handling state
+ * nmi_flags: flags settable by another CPU to force curcpu to
+ *     acknowledge a decrementer interrupt or IPI
+ * pend_decr_sum: the sum of the contents of decrementer - can
+ *     translate to the number of decrementer interrupts that
+ *     were missed while interrupts were disabled
+ * intr_decr_total: the number of decrementer interrupts that have
+ *     occurred on this cpu since boot - if this number does not
+ *     change after much more than a second, this CPU has likely
+ *     experienced a hard hang
+ */
 
+#define PCPU_AIM32_FIELDS
+#define PCPU_AIM64_FIELDS							\
+	volatile uint8_t	pc_intr_pend_flags;				\
+	uint8_t	pc_intr_flags;							\
+	uint16_t	pc_intr_pad;						\
+	volatile uint32_t	pc_nmi_flags;					\
+	uint64_t	pc_pend_decr_sum;					\
+	uint64_t	pc_intr_decr_total;
+#else
+#define PCPU_AIM32_FIELDS							\
+	struct pmap	*pc_curpmap;		/* current pmap */
+#define PCPU_AIM64_FIELDS
+#endif
 #define	PCPU_MD_COMMON_FIELDS					\
-	int		pc_inside_intr;					\
-	PCPU_PPC_FIELDS							\
 	struct thread	*pc_fputhread;		/* current fpu user */	\
 	struct thread	*pc_vecthread;		/* current vec user */  \
 	struct thread	*pc_htmthread;		/* current htm user */  \
+	PCPU_AIM32_FIELDS						\
 	uintptr_t	pc_hwref;					\
 	int		pc_bsp;						\
 	volatile int	pc_awake;					\
+	PCPU_AIM64_FIELDS						\
 	uint32_t	pc_ipimask;					\
 	register_t	pc_tempsave[CPUSAVE_LEN];			\
 	register_t	pc_disisave[CPUSAVE_LEN];			\
@@ -66,16 +88,16 @@ struct pvo_entry;
 #define PCPU_MD_AIM32_FIELDS						\
 	struct pvo_entry *qmap_pvo;					\
 	struct mtx	qmap_lock;					\
-	char		__pad[128];
+	char		__pad[132];
 
-#define PCPU_MD_AIM64_FIELDS					\
+#define PCPU_MD_AIM64_FIELDS				                \
 	struct slb	slb[64];					\
 	struct slb	**userslb;					\
 	register_t	slbsave[18];					\
 	uint8_t		slbstack[1024];				\
 	struct pvo_entry *qmap_pvo;					\
 	struct mtx	qmap_lock;					\
-	char		__pad[1345];
+	char		__pad[1337];
 
 #ifdef __powerpc64__
 #define PCPU_MD_AIM_FIELDS	PCPU_MD_AIM64_FIELDS

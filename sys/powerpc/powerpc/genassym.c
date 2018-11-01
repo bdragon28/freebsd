@@ -59,6 +59,13 @@
 
 ASSYM(PC_CURTHREAD, offsetof(struct pcpu, pc_curthread));
 ASSYM(PC_CURPCB, offsetof(struct pcpu, pc_curpcb));
+
+ASSYM(PC_INTR_PEND_FLAGS, offsetof(struct pcpu, pc_intr_pend_flags));
+ASSYM(PC_INTR_FLAGS, offsetof(struct pcpu, pc_intr_flags));
+ASSYM(PC_NMI_FLAGS, offsetof(struct pcpu, pc_nmi_flags));
+ASSYM(PC_PEND_DECR_SUM, offsetof(struct pcpu, pc_pend_decr_sum));
+ASSYM(PC_INTR_DECR_TOTAL, offsetof(struct pcpu, pc_intr_decr_total));
+
 #ifndef __powerpc64__
 ASSYM(PC_CURPMAP, offsetof(struct pcpu, pc_curpmap));
 #endif
