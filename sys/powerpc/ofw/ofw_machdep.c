@@ -718,7 +718,7 @@ openfirmware_core(void *args)
 	 * anywhere unexpected with PCPU set to something strange
 	 * or the stack pointer wrong.
 	 */
-	oldmsr = intr_disable();
+	oldmsr = intr_disable_hard();
 
 	ofw_sprg_prepare();
 
@@ -745,7 +745,7 @@ openfirmware_core(void *args)
 
 	ofw_sprg_restore();
 
-	intr_restore(oldmsr);
+	intr_restore_hard(oldmsr);
 
 	return (result);
 }

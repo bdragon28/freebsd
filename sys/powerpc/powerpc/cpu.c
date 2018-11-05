@@ -368,7 +368,7 @@ cpu_est_clockrate(int cpu_id, uint64_t *cps)
 
 	vers = mfpvr() >> 16;
 	msr = mfmsr();
-	mtmsr(msr & ~PSL_EE);
+	mtmsr_ee(msr & ~PSL_EE);
 
 	switch (vers) {
 		case MPC7450:
@@ -714,7 +714,9 @@ cpu_idle(int busy)
 #ifdef INVARIANTS
 	if ((mfmsr() & PSL_EE) != PSL_EE) {
 		struct thread *td = curthread;
-		printf("td msr %#lx\n", (u_long)td->td_md.md_saved_msr);
+		printf("td msr %#lx flag: %#x count: %d critnest:%d\n",
+			   (u_long)td->td_md.md_saved_msr,
+			   PCPU_GET(intr_flags), td->td_md.md_spinlock_count, td->td_critnest);
 		panic("ints disabled in idleproc!");
 	}
 #endif
@@ -774,7 +776,7 @@ cpu_idle_60x(sbintime_t sbt)
 
 #ifdef BOOKE_E500
 static void
-cpu_idle_e500mc(sbintime_t sbt)
+cpu_idle_e500mc(sbintime_t sbt __unused)
 {
 	/*
 	 * Base binutils doesn't know what the 'wait' instruction is, so
@@ -785,13 +787,13 @@ cpu_idle_e500mc(sbintime_t sbt)
 #endif
 
 static void
-cpu_idle_booke(sbintime_t sbt)
+cpu_idle_booke(sbintime_t sbt __unused)
 {
+#ifdef BOOKE_E500
 	register_t msr;
 
 	msr = mfmsr();
 
-#ifdef BOOKE_E500
 	powerpc_sync();
 	mtmsr(msr | PSL_WE);
 #endif
@@ -827,7 +829,7 @@ cpu_idle_power9(sbintime_t sbt)
 	msr = mfmsr();
 
 	/* Suspend external interrupts until stop instruction completes. */
-	mtmsr(msr &  ~PSL_EE);
+	mtmsr_ee(msr &  ~PSL_EE);
 	/* Set the stop state to lowest latency, wake up to next instruction */
 	/* Set maximum transition level to 2, for deepest lossless sleep. */
 	mtspr(SPR_PSSCR, (2 << PSSCR_MTL_S) | (0 << PSSCR_RL_S));
@@ -837,7 +839,7 @@ cpu_idle_power9(sbintime_t sbt)
 	 * Re-enable external interrupts to capture the interrupt that caused
 	 * the wake up.
 	 */
-	mtmsr(msr);
+	mtmsr_ee(msr);
 	
 }
 #endif

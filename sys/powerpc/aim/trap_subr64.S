@@ -451,8 +451,8 @@ CNAME(exi_trapcode):
 	ld	%r1,TRAP_GENTRAP(0)
 	addi	%r1,%r1,(exitrap-generictrap)
 	mtlr	%r1
+	li	%r1, EXC_EXI
 	blrl				/* Branch to exitrap */
-	nop
 CNAME(exi_trapcodeend):
 	.globl	CNAME(hvi_trapcode),CNAME(hvi_trapcodeend)
 	.p2align 3
@@ -463,8 +463,8 @@ CNAME(hvi_trapcode):
 	ld	%r1,TRAP_GENTRAP(0)
 	addi	%r1,%r1,(hvitrap-generictrap)
 	mtlr	%r1
+	li	%r1, EXC_HVI
 	blrl				/* Branch to hvitrap */
-	nop
 CNAME(hvi_trapcodeend):
 	.globl	CNAME(decr_trapcode),CNAME(decr_trapcodeend)
 	.p2align 3
@@ -475,8 +475,8 @@ CNAME(decr_trapcode):
 	ld	%r1,TRAP_GENTRAP(0)
 	addi	%r1,%r1,(decrtrap-generictrap)
 	mtlr	%r1
+	li	%r1, EXC_DECR
 	blrl				/* Branch to decrtrap */
-	nop
 CNAME(decr_trapcodeend):
 /*
  * This code gets copied to all the trap vectors
@@ -797,6 +797,7 @@ disitrap:
  * overlap state save with the work expected by k_trap
  */
 .macro SAVE_CONTEXT
+	mtsprg3	%r1
 	GET_CPUINFO(%r1)
 	std	%r27,(PC_TEMPSAVE+CPUSAVE_R27)(%r1)	/* free r27-r29 */
 	std	%r28,(PC_TEMPSAVE+CPUSAVE_R28)(%r1)
@@ -805,26 +806,17 @@ disitrap:
 	mfcr	%r29				/* save CR */
 	lwz	%r28, PC_NMI_FLAGS(%r1)
 	or	%r28, %r28, %r27
-	/* skip trap if INTR_DISABLE is set but NMI flags not set */
-	cmplwi	%r28, PPC_INTR_DISABLE
+	/* skip trap if INTR_ENABLE and NMI flags not set */
+	cmplwi	%r28, 0
 .endm
 
-.macro K_TRAP_SETUP traptype dohyper
+.macro K_TRAP_SETUP
 	std	%r30,(PC_TEMPSAVE+CPUSAVE_R30)(%r1)
 	std	%r31,(PC_TEMPSAVE+CPUSAVE_R31)(%r1)
 	mfsprg2	%r28				/* load LR */
 
-	/* XXX */
-.if \dohyper == 1
-	mfspr	%r27, SPR_HSRR0
-	mtsrr0	%r27
-	mfspr	%r27, SPR_HSRR1
-	mtsrr1	%r27
-.endif
 	/* Test whether we already had PR set */
-	li	%r27, \traptype
 	mfsrr1	%r31
-	mtsprg3	%r27				/* save trap type to SPRG3 */
 	mtcr	%r31
 	bf	17, 10f
 	ld	%r1,PC_CURPCB(%r1)		/* reload pcb pointer for u_trap */
@@ -835,25 +827,30 @@ disitrap:
 .endm
 
 /*
- * check for NMI flags or restore context
- */
-.macro FASTRETURN_SETUP pendflag
-	lbz	%r27, PC_INTR_PEND_FLAGS(%r1)
-	ori	%r27, %r27, \pendflag
-	stb	%r27, PC_INTR_PEND_FLAGS(%r1)
-	b	fastreturn
-.endm
-
-/*
+ * %r27 - scratch
+ * %r28 - scratch
+ * %r29 - CR
+ * SPRG1 - %r1
+ * SPRG2 - LR
+ *
  * restore cr, lr, r1, and r27-r29
  */
+
 fastreturn:
-	mtcr	%r29
+	/*
+	 * Disable interrupts to prevent re-trapping
+	 */
+	mfsrr1	%r27
+	rldicl	%r28,%r27,48,1
+	rotldi	%r28,%r28,16
+	mtsrr1	%r28
+fastreturn_decr:
+	mfsprg2	%r28
 	ld	%r27,(PC_TEMPSAVE+CPUSAVE_R27)(%r1)
+	mtlr	%r28
+	mtcr	%r29
 	ld	%r28,(PC_TEMPSAVE+CPUSAVE_R28)(%r1)
 	ld	%r29,(PC_TEMPSAVE+CPUSAVE_R29)(%r1)
-	mfsprg2	%r1
-	mtlr	%r1
 	mfsprg1	%r1
 	rfid
 
@@ -883,18 +880,11 @@ realtrap_overwrite:
 /*
  * after SAVE_CONTEXT:
  * %r1 contains PCPU
- * %r27 contains intr_flags
+ * %r27 scratch
  * %r28 scratch
  * %r29 contains original CR
- * CR contains result of checking for PPC_INTR_DISABLE
+ * CR contains result of checking for PPC_INTR_ENABLE
  */
-hvitrap:
-	SAVE_CONTEXT
-	beq-	1f
-	K_TRAP_SETUP traptype=EXC_HVI dohyper=1
-1:
-	/* note that an hvitrap was seen */
-	FASTRETURN_SETUP pendflag=PPC_HVI_PEND
 decrtrap:
 	SAVE_CONTEXT
 	/*
@@ -912,18 +902,24 @@ decrtrap:
 	lis	%r27, INT_MAX@h
 	std	%r28, PC_INTR_DECR_TOTAL(%r1)
 	mtdec	%r27
-	beq-	1f
+	li	%r27, PPC_DECR_PEND
+	lbz	%r28, PC_INTR_PEND_FLAGS(%r1)
+	or	%r27, %r27, %r28
+	stb	%r27, PC_INTR_PEND_FLAGS(%r1)
+	beq-	fastreturn_decr
+	K_TRAP_SETUP
 
-	K_TRAP_SETUP traptype=EXC_DECR dohyper=0
-1:
-	FASTRETURN_SETUP pendflag=PPC_DECR_PEND
+hvitrap:
+	mtsprg3	%r1
+	mfspr	%r1, SPR_HSRR0
+	mtsrr0	%r1
+	mfspr	%r1, SPR_HSRR1
+	mtsrr1	%r1
+	mfsprg3	%r1
 exitrap:
 	SAVE_CONTEXT
-	beq-	1f
-	K_TRAP_SETUP traptype=EXC_EXI dohyper=0
-1:
-	FASTRETURN_SETUP pendflag=PPC_EXI_PEND
-
+	beq-	fastreturn
+	K_TRAP_SETUP
 
 /*
  * generictrap does some standard setup for trap handling to minimize
@@ -1003,8 +999,9 @@ trapagain:
 CNAME(trapexit):
 /* Disable interrupts: */
 	mfmsr	%r3
-	andi.	%r3,%r3,~PSL_EE@l
-	mtmsr	%r3
+	rldicl	%r5,%r3,48,1
+	rotldi	%r5,%r5,16
+	mtmsr	%r5
 	isync
 /* Test AST pending: */
 	ld	%r5,FRAME_SRR1+48(%r1)
@@ -1040,7 +1037,8 @@ ASENTRY_NOPROF(breakpoint)
 	mtsprg1	%r1
 	mfmsr	%r3
 	mtsrr1	%r3
-	andi.	%r3,%r3,~(PSL_EE|PSL_ME)@l
+	li	%r1, ~(PSL_EE|PSL_ME)@l
+	and	%r3, %r3, %r1
 	mtmsr	%r3			/* disable interrupts */
 	isync
 	GET_CPUINFO(%r3)
