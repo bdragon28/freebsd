@@ -565,7 +565,7 @@ atomic_store_rel_long(volatile u_long *addr, u_long val)
  * zero if the compare failed, nonzero otherwise.
  */
 #ifdef ISA_206_ATOMICS
-static __inline int
+static __inline int 
 atomic_cmpset_char(volatile u_char *p, u_char cmpval, u_char newval)
 {
 	int	ret;
@@ -919,6 +919,19 @@ ATOMIC_FCMPSET_ACQ_REL(long);
 #define	atomic_fcmpset_acq_ptr	atomic_fcmpset_acq_int
 #define	atomic_fcmpset_rel_ptr	atomic_fcmpset_rel_int
 #endif
+
+#ifdef ISA_206_ATOMICS
+static __inline u_char
+atomic_fetchadd_char(volatile uint8_t *p, u_char v)
+{
+	u_char value;
+
+	do {
+		value = *p;
+	} while (!atomic_cmpset_char(p, value, value + v));
+	return (value);
+}
+#endif /* ISA_206_ATOMICS */
 
 static __inline u_int
 atomic_fetchadd_int(volatile u_int *p, u_int v)
