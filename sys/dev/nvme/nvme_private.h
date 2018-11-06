@@ -120,7 +120,7 @@ extern bool		nvme_verbose_cmd_dump;
 struct nvme_completion_poll_status {
 
 	struct nvme_completion	cpl;
-	int			done;
+	volatile int			done;
 };
 
 extern devclass_t nvme_devclass;
