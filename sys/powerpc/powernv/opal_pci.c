@@ -149,6 +149,8 @@ static device_method_t	opalpci_methods[] = {
 
 	/* Bus interface */
 	DEVMETHOD(bus_get_dma_tag,	opalpci_get_dma_tag),
+	DEVMETHOD(bus_get_cpus,         ofw_pcibus_get_cpus),
+	DEVMETHOD(bus_get_domain,       ofw_pcibus_get_domain),
 
 	DEVMETHOD_END
 };
