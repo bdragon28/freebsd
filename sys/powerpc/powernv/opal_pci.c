@@ -145,6 +145,10 @@ static device_method_t	opalpci_methods[] = {
 	DEVMETHOD(pcib_map_msi,		opalpci_map_msi),
 	DEVMETHOD(pcib_route_interrupt,	opalpci_route_interrupt),
 
+	/* Bus interface */
+	DEVMETHOD(bus_get_cpus,		ofw_pcibus_get_cpus),
+	DEVMETHOD(bus_get_domain,	ofw_pcibus_get_domain),
+
 	/* PIC interface for MSIs */
 	DEVMETHOD(pic_enable,		opalpic_pic_enable),
 	DEVMETHOD(pic_eoi,		opalpic_pic_eoi),

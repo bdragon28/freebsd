@@ -244,7 +244,6 @@ out:
 	return (0);
 }
 
-
 void
 powernv_mem_regions(platform_t plat, struct mem_region *phys, int *physsz,
     struct mem_region *avail, int *availsz)
@@ -332,7 +331,7 @@ powernv_cpuref_init(void)
 					tmp_cpuref[tmp_cpuref_cnt].cr_domain = interrupt_servers[a] >> 11;
 					if (interrupt_servers[a] == (uint32_t)powernv_boot_pir)
 						bsp = tmp_cpuref_cnt;
-
+					printf("%s cpu(%d) domain=%x\n", __func__, interrupt_servers[a], interrupt_servers[a] >> 11);
 					tmp_cpuref_cnt++;
 				}
 			}

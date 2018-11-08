@@ -186,6 +186,7 @@ opaldev_attach(device_t dev)
 	uint32_t async_count;
 	struct ofw_bus_devinfo *dinfo;
 	struct resource *irq;
+	void *cookie;
 
 	/* Test for RTC support and register clock if it works */
 	rv = opal_call(OPAL_RTC_READ, vtophys(&junk), vtophys(&junk));
@@ -210,7 +211,7 @@ opaldev_attach(device_t dev)
 	    RF_ACTIVE)) != NULL; i++)
 		bus_setup_intr(dev, irq, INTR_TYPE_TTY | INTR_MPSAFE |
 		    INTR_ENTROPY, NULL, opal_intr, (void *)rman_get_start(irq),
-		    NULL);
+		    &cookie);
 
 	OF_getencprop(ofw_bus_get_node(dev), "opal-msg-async-num",
 	    &async_count, sizeof(async_count));
