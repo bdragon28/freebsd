@@ -4562,10 +4562,10 @@ mmu_radix_pmap_release(pmap_t pmap)
 	KASSERT(vm_radix_is_empty(&pmap->pm_root),
 	    ("pmap_release: pmap has reserved page table page(s)"));
 
+	pmap_invalidate_all(pmap);
+	isa3_proctab[pmap->pm_pid].proctab0 = 0;
 	uma_zfree(zone_radix_pgd, pmap->pm_pml1);
-	/*
-	 * XXX free pid
-	 */
+	vmem_free(asid_arena, pmap->pm_pid, 1);
 }
 
 /*
@@ -5609,7 +5609,9 @@ mmu_radix_pmap_mapdev_attr(vm_paddr_t pa, vm_size_t size, vm_memattr_t attr)
 	ppa = trunc_page(pa);
 	offset = pa & PAGE_MASK;
 	size = roundup2(offset + size, PAGE_SIZE);
-
+	if (pa < powerpc_ptob(Maxmem))
+		panic("bad pa: %#lx less than Maxmem %#lx\n",
+			  pa, powerpc_ptob(Maxmem));
 	va = kva_alloc(size);
 	if (bootverbose)
 		printf("%s(%#lx, %lu, %d)\n", __func__, pa, size, attr);
