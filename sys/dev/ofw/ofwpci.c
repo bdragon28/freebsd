@@ -30,6 +30,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/systm.h>
 #include <sys/module.h>
 #include <sys/bus.h>
+#include <sys/kdb.h>
 #include <sys/conf.h>
 #include <sys/kernel.h>
 #include <sys/rman.h>
@@ -409,11 +410,13 @@ ofw_pci_alloc_resource(device_t bus, device_t child, int type, int *rid,
 	struct rman *rm;
 	int needactivate;
 
-
 	needactivate = flags & RF_ACTIVE;
 	flags &= ~RF_ACTIVE;
 
 	sc = device_get_softc(bus);
+	device_printf(bus, "%s(%s, %d, %p, %#lx, %#lx, %lu, %x)\n",
+				  __func__, device_get_name(child), type, rid, start,
+				  end, count, flags);
 
 #if defined(NEW_PCIB) && defined(PCI_RES_BUS)
 	if (type ==  PCI_RES_BUS) {
@@ -424,10 +427,11 @@ ofw_pci_alloc_resource(device_t bus, device_t child, int type, int *rid,
 
 	rm = ofw_pci_get_rman(sc, type, flags);
 	if (rm == NULL)  {
+		printf("%s case 2 rm==NULL\n", __func__);
+
 		return (bus_generic_alloc_resource(bus, child, type, rid,
 		    start, end, count, flags | needactivate));
 	}
-
 	rv = rman_reserve_resource(rm, start, end, count, flags, child);
 	if (rv == NULL) {
 		device_printf(bus, "failed to reserve resource for %s\n",

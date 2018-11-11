@@ -589,10 +589,10 @@ atomic_cmpset_char(volatile u_char *p, u_char cmpval, u_char newval)
 	return (ret);
 }
 
-static __inline int
+static __inline short
 atomic_cmpset_short(volatile u_short *p, u_short cmpval, u_short newval)
 {
-	int	ret;
+	short	ret;
 
 	__asm __volatile (
 		"1:\tlharx %0, 0, %2\n\t"	/* load old value */
@@ -649,7 +649,7 @@ atomic_cmpset_masked(uint32_t *p, uint32_t cmpval, uint32_t newval,
 static __inline int
 atomic_cmpset_int(volatile u_int* p, u_int cmpval, u_int newval)
 {
-	int	ret;
+	int	prev;
 
 	__asm __volatile (
 		"1:\tlwarx %0, 0, %2\n\t"	/* load old value */
@@ -663,12 +663,13 @@ atomic_cmpset_int(volatile u_int* p, u_int cmpval, u_int newval)
 		"stwcx. %0, 0, %2\n\t"       	/* clear reservation (74xx) */
 		"li %0, 0\n\t"			/* failure - retval = 0 */
 		"3:\n\t"
-		: "=&r" (ret), "=m" (*p)
+		: "=&r" (prev), "=m" (*p)
 		: "r" (p), "r" (cmpval), "r" (newval), "m" (*p)
 		: "cr0", "memory");
 
-	return (ret);
+	return (prev);
 }
+
 static __inline int
 atomic_cmpset_long(volatile u_long* p, u_long cmpval, u_long newval)
 {
@@ -785,10 +786,10 @@ atomic_fcmpset_char(volatile u_char *p, u_char *cmpval, u_char newval)
 	return (ret);
 }
 
-static __inline int
+static __inline short
 atomic_fcmpset_short(volatile u_short *p, u_short *cmpval, u_short newval)
 {
-	int	ret;
+	short	ret;
 
 	__asm __volatile (
 		"lharx %0, 0, %3\n\t"		/* load old value */
@@ -800,7 +801,7 @@ atomic_fcmpset_short(volatile u_short *p, u_short *cmpval, u_short newval)
 		"b 2f\n\t"			/* we've succeeded */
 		"1:\n\t"
 		"sthcx. %0, 0, %3\n\t"       	/* clear reservation (74xx) */
-		"stwx %0, 0, %7\n\t"
+		"sthx %0, 0, %7\n\t"
 		"li %0, 0\n\t"			/* failure - retval = 0 */
 		"2:\n\t"
 		: "=&r" (ret), "=m" (*p), "=m" (*cmpval)
@@ -835,6 +836,7 @@ atomic_fcmpset_int(volatile u_int *p, u_int *cmpval, u_int newval)
 
 	return (ret);
 }
+
 static __inline int
 atomic_fcmpset_long(volatile u_long *p, u_long *cmpval, u_long newval)
 {

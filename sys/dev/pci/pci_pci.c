@@ -111,6 +111,7 @@ static device_method_t pcib_methods[] = {
     DEVMETHOD(bus_setup_intr,		bus_generic_setup_intr),
     DEVMETHOD(bus_teardown_intr,	bus_generic_teardown_intr),
     DEVMETHOD(bus_reset_child,		pcib_reset_child),
+    DEVMETHOD(bus_translate_resource,	bus_generic_translate_resource),
 
     /* pcib interface */
     DEVMETHOD(pcib_maxslots,		pcib_ari_maxslots),

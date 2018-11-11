@@ -261,3 +261,6 @@ options		BOOTVERBOSE
 
 options		ZFS
 options		TMPFS
+options		NULLFS
+options		FDESCFS
+options		COMPAT_LINUXKPI

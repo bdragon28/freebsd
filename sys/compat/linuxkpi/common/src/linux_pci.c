@@ -73,6 +73,7 @@ static device_method_t pci_methods[] = {
 	DEVMETHOD(device_suspend, linux_pci_suspend),
 	DEVMETHOD(device_resume, linux_pci_resume),
 	DEVMETHOD(device_shutdown, linux_pci_shutdown),
+	DEVMETHOD(bus_translate_resource, bus_generic_translate_resource),
 	DEVMETHOD_END
 };
 
@@ -391,7 +392,7 @@ unsigned long
 pci_resource_start(struct pci_dev *pdev, int bar)
 {
 	struct resource_list_entry *rle;
-	rman_res_t newstart;
+	unsigned long newstart;
 	device_t dev;
 
 	if ((rle = linux_pci_get_bar(pdev, bar)) == NULL)
@@ -399,9 +400,9 @@ pci_resource_start(struct pci_dev *pdev, int bar)
 	dev = pci_find_dbsf(pdev->bus->domain, pdev->bus->number,
 	    PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
 	MPASS(dev != NULL);
-	if (BUS_TRANSLATE_RESOURCE(dev, rle->type, rle->start, &newstart)) {
-		device_printf(pdev->dev.bsddev, "translate of %#jx failed\n",
-		    (uintmax_t)rle->start);
+	if (bus_generic_translate_resource(dev, rle->type, rle->start, &newstart)) {
+		device_printf(pdev->dev.bsddev, "translate of %#lx failed\n",
+			rle->start);
 		return (0);
 	}
 	return (newstart);
