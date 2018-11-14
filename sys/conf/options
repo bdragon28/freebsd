@@ -1033,3 +1033,6 @@ AMDSBWD_DEBUG	opt_amdsbwd.h
 # gcov support
 GCOV		opt_global.h
 LINDEBUGFS
+
+# iWARP client interface support in ixl
+IXL_IW			opt_ixl.h

@@ -695,6 +695,10 @@ _wpifw=		wpifw
 _x86bios=	x86bios
 .endif
 
+.if ${COMPILER_FEATURES:Mc++11}
+_ixl=		ixl
+.endif
+
 .if ${MACHINE_CPUARCH} == "amd64"
 _amdgpio=	amdgpio
 _ccp=		ccp
