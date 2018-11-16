@@ -1209,15 +1209,15 @@ void cam_iosched_sysctl_init(struct cam_iosched_softc *isc,
 #endif
 }
 
+#ifdef CAM_IOSCHED_DYNAMIC
 void
 cam_iosched_set_latfcn(struct cam_iosched_softc *isc,
     cam_iosched_latfcn_t fnp, void *argp)
 {
-#ifdef CAM_IOSCHED_DYNAMIC
 	isc->latfcn = fnp;
 	isc->latarg = argp;
-#endif
 }
+#endif
 
 /*
  * Client drivers can set two parameters. "goal" is the number of BIO_DELETEs
