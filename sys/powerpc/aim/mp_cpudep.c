@@ -109,6 +109,10 @@ cpudep_ap_early_bootstrap(void)
 			 * later.
 			 */
 			mtspr(SPR_FSCR, 0);
+#ifndef NO_SPECEXEC
+			mtspr(SPR_HID0, mfspr(SPR_HID0) | HID0_SPECEXEC);
+			isync();
+#endif
 		}
 #endif
 		break;
