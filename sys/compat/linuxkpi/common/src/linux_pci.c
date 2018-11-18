@@ -59,6 +59,14 @@ __FBSDID("$FreeBSD$");
 #include <linux/pci.h>
 #include <linux/compat.h>
 
+#ifdef KLD_MODULE
+/*
+ * Not getting seen in the module build somehow
+ */
+int	bus_generic_translate_resource(device_t dev, int type, rman_res_t start,
+			      rman_res_t *newstart);
+#endif
+
 static device_probe_t linux_pci_probe;
 static device_attach_t linux_pci_attach;
 static device_detach_t linux_pci_detach;
@@ -393,14 +401,10 @@ pci_resource_start(struct pci_dev *pdev, int bar)
 {
 	struct resource_list_entry *rle;
 	unsigned long newstart;
-	device_t dev;
 
 	if ((rle = linux_pci_get_bar(pdev, bar)) == NULL)
 		return (0);
-	dev = pci_find_dbsf(pdev->bus->domain, pdev->bus->number,
-	    PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn));
-	MPASS(dev != NULL);
-	if (bus_generic_translate_resource(dev, rle->type, rle->start, &newstart)) {
+	if (bus_generic_translate_resource(pdev->dev.bsddev, rle->type, rle->start, &newstart)) {
 		device_printf(pdev->dev.bsddev, "translate of %#lx failed\n",
 			rle->start);
 		return (0);
