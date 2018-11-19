@@ -169,7 +169,7 @@ vga_pci_map_bios(device_t dev, size_t *size)
 	device_t pcib;
 	uint32_t rom_addr;
 	uint16_t config;
-	volatile unsigned char *bios;
+	char *bios;
 	int i, rid, found;
 
 #if defined(__amd64__) || defined(__i386__)
@@ -225,15 +225,16 @@ vga_pci_map_bios(device_t dev, size_t *size)
 	bios = rman_get_virtual(res);
 	*size = rman_get_size(res);
 	for (found = i = 0; i < hz; i++) {
-		found = (bios[0] == 0x55 && bios[1] == 0xaa);
+		found = (atomic_load_acq_char(&bios[0]) == 0x55 &&
+				 atomic_load_acq_char(&bios[1]) == 0xaa);
 		if (found)
 			break;
 		pause("vgabios", 1);
 	}
 	if (found)
-		return (__DEVOLATILE(void *, bios));
+		return (bios);
 	if (bootverbose)
-		device_printf(dev, "initial ROM mapping failed -- resetting\n");
+		device_printf(dev, "initial rom mapping failed -- resetting\n");
 
 	/*
 	 * Enable ROM decode
@@ -259,14 +260,15 @@ vga_pci_map_bios(device_t dev, size_t *size)
 	bios = rman_get_virtual(res);
 	*size = rman_get_size(res);
 	for (found = i = 0; i < 3*hz; i++) {
-		found = (bios[0] == 0x55 && bios[1] == 0xaa);
+		found = (atomic_load_acq_char(&bios[0]) == 0x55 &&
+				 atomic_load_acq_char(&bios[1]) == 0xaa);
 		if (found)
 			break;
 		pause("vgabios", 1);
 	}
 	if (found)
-		return (__DEVOLATILE(void *, bios));
-	device_printf(dev, "ROM mapping failed\n");
+		return (bios);
+	device_printf(dev, "rom mapping failed\n");
 	vr = lookup_res(device_get_softc(dev), rid);
 	vga_pci_release_resource(dev, NULL, SYS_RES_MEMORY, rid,
 	    vr->vr_res);
