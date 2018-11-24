@@ -1114,6 +1114,7 @@ ppc_instr_emulate(struct trapframe *frame, struct pcb *pcb)
 	}
 	sig = fpu_emulate(frame, &pcb->pcb_fpu);
 #endif
+#ifndef __powerpc64__
 	if (sig == SIGILL) {
 		if (pcb->pcb_lastill != frame->srr0) {
 			/* Allow a second chance, in case of cache sync issues. */
@@ -1122,7 +1123,7 @@ ppc_instr_emulate(struct trapframe *frame, struct pcb *pcb)
 			pcb->pcb_lastill = frame->srr0;
 		}
 	}
-
+#endif
 	return (sig);
 }
 

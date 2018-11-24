@@ -40,10 +40,17 @@ struct pmap;
 struct pvo_entry;
 #define	CPUSAVE_LEN	9
 
-#define	PCPU_MD_COMMON_FIELDS						\
+#ifndef __powerpc64__
+#define PCPU_PPC_FIELDS							\
+	struct pmap	*pc_curpmap;		/* current pmap */
+#else
+#define PCPU_PPC_FIELDS
+#endif
+
+#define	PCPU_MD_COMMON_FIELDS					\
 	int		pc_inside_intr;					\
-	struct pmap	*pc_curpmap;		/* current pmap */	\
-	struct thread	*pc_fputhread;		/* current fpu user */  \
+	PCPU_PPC_FIELDS							\
+	struct thread	*pc_fputhread;		/* current fpu user */	\
 	struct thread	*pc_vecthread;		/* current vec user */  \
 	struct thread	*pc_htmthread;		/* current htm user */  \
 	uintptr_t	pc_hwref;					\
@@ -61,7 +68,7 @@ struct pvo_entry;
 	struct mtx	qmap_lock;					\
 	char		__pad[128];
 
-#define PCPU_MD_AIM64_FIELDS						\
+#define PCPU_MD_AIM64_FIELDS					\
 	struct slb	slb[64];					\
 	struct slb	**userslb;					\
 	register_t	slbsave[18];					\
