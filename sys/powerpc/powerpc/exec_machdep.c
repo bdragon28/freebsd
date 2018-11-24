@@ -1163,6 +1163,7 @@ ppc_instr_emulate(struct trapframe *frame, struct thread *td)
 	if ((sig == 0 || sig == SIGFPE) && pcb->pcb_flags & PCB_FPU)
 		enable_fpu(td);
 #endif
+#ifndef __powerpc64__
 	if (sig == SIGILL) {
 		if (pcb->pcb_lastill != frame->srr0) {
 			/* Allow a second chance, in case of cache sync issues. */
@@ -1171,7 +1172,7 @@ ppc_instr_emulate(struct trapframe *frame, struct thread *td)
 			pcb->pcb_lastill = frame->srr0;
 		}
 	}
-
+#endif
 	return (sig);
 }
 
