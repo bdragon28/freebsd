@@ -678,12 +678,15 @@ cnttzd(uint64_t word)
 	return (int)result;
 }
 
+/* Remove after optimized pagezero patch lands. */
+#ifndef PPC64_OPTIMIZED_PAGEZERO
 static __inline void
 pagezero(void *page)
 {
 	/* XXX optimize me */
 	memset(page, 0, PAGE_SIZE);
 }
+#endif
 
 static inline int
 bsfq(uint64_t word)
