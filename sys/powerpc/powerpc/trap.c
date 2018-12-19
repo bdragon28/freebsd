@@ -624,6 +624,11 @@ cpu_fetch_syscall_args(struct thread *td)
 
  	if (p->p_sysent->sv_mask)
 		sa->code &= p->p_sysent->sv_mask;
+#if 0
+	if (sa->code != 3 && sa->code != 116)
+		printf("%s:%d %s()\n",
+			   td->td_proc->p_comm, td->td_proc->p_pid, syscallnames[sa->code]);
+#endif
 	if (sa->code >= p->p_sysent->sv_size)
 		sa->callp = &p->p_sysent->sv_table[0];
 	else
@@ -802,7 +807,9 @@ trap_pfault(struct trapframe *frame, int user)
 		else
 			ftype = VM_PROT_READ;
 	}
-
+#if 0
+	printtrap(frame->exc, frame, 0, user);
+#endif
 	if (user) {
 		KASSERT(p->p_vmspace != NULL, ("trap_pfault: vmspace  NULL"));
 		map = &p->p_vmspace->vm_map;
@@ -827,6 +834,8 @@ trap_pfault(struct trapframe *frame, int user)
 	if (rv == KERN_SUCCESS)
 		return (0);
 
+	printf("%s vm_fault=>rv = %d\n", __func__, rv);
+	printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
 	if (!user && handle_onfault(frame))
 		return (0);
 

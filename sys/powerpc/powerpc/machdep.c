@@ -423,6 +423,8 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	 * Bring up MMU
 	 */
 	pmap_bootstrap(startkernel, endkernel);
+	if (bootverbose)
+		printf("enabling translation\n");
 	mtmsr(psl_kernset & ~PSL_EE);
 	/*
 	 * Initialize params/tunables that are derived from memsize
@@ -447,6 +449,8 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	pc->pc_curpcb = thread0.td_pcb;
 	/* Initialise the message buffer. */
 	msgbufinit(msgbufp, msgbufsize);
+	if (bootverbose)
+		printf("%s done\n", __func__);
 
 #ifdef KDB
 	if (boothowto & RB_KDB)
