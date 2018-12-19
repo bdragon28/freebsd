@@ -406,6 +406,8 @@ trap(struct trapframe *frame)
 		}
 	} else {
 		/* Kernel Mode Traps */
+		if (cold)
+			printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
 
 		KASSERT(cold || td->td_ucred != NULL,
 		    ("kernel trap doesn't have ucred"));
@@ -558,9 +560,12 @@ printtrap(u_int vector, struct trapframe *frame, int isfatal, int user)
 	printf("   lr              = 0x%" PRIxPTR " (0x%" PRIxPTR ")\n",
 	    frame->lr, frame->lr - (register_t)(__startkernel - KERNBASE));
 	printf("   curthread       = %p\n", curthread);
-	if (curthread != NULL)
-		printf("          pid = %d, comm = %s\n",
-		    curthread->td_proc->p_pid, curthread->td_name);
+#ifdef __powerpc64__
+	if (!cold && curthread != NULL && !disable_radix)
+		printf("          pid = %d, comm = %s asid: %lu\n",
+			   curthread->td_proc->p_pid, curthread->td_name,
+			   vmspace_pmap(curthread->td_proc->p_vmspace)->pm_pid);
+#endif
 	printf("\n");
 }
 
