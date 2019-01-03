@@ -205,7 +205,7 @@ trap(struct trapframe *frame)
 #ifdef KDTRACE_HOOKS
 	uint32_t inst;
 #endif
-	int		sig, type, user, rv;
+	int		sig, type, user;
 	u_int		ucode;
 	ksiginfo_t	ksi;
 	register_t 	fscr;
@@ -273,11 +273,7 @@ trap(struct trapframe *frame)
 #endif
 		case EXC_DSI:
 		case EXC_ISI:
-			if (td->td_pflags & TDP_UNUSED9)
-				trap_fatal(frame);
-			td->td_pflags |= TDP_UNUSED9;
 			sig = trap_pfault(frame, 1);
-			td->td_pflags &= ~TDP_UNUSED9;
 			if (sig == SIGSEGV)
 				ucode = SEGV_MAPERR;
 			break;
@@ -440,10 +436,8 @@ trap(struct trapframe *frame)
 			break;
 #endif
 		case EXC_DSI:
-			rv = trap_pfault(frame, 0);
-			if (rv == 0)
+			if (trap_pfault(frame, 0) == 0)
  				return;
-
 			break;
 		case EXC_MCHK:
 			if (handle_onfault(frame))
@@ -579,10 +573,10 @@ extern int fusufault(void);
 static int
 handle_onfault(struct trapframe *frame)
 {
-	struct          thread *td;
-	jmp_buf         *fb;
+	struct		thread *td;
+	jmp_buf		*fb;
 
-#ifdef __powerpc64__	
+#ifdef __powerpc64__
 	if (disable_radix == 0) {
 		uint64_t dispatch = (uintptr_t)curthread->td_pcb->pcb_onfault;
 		if (__predict_true(dispatch == 0))
@@ -609,10 +603,9 @@ handle_onfault(struct trapframe *frame)
 		frame->fixreg[3] = 1;
 		frame->cr = (*fb)->_jb[FAULTBUF_CR];
 		bcopy(&(*fb)->_jb[FAULTBUF_R14], &frame->fixreg[14],
-			  18 * sizeof(register_t));
+		    18 * sizeof(register_t));
 		td->td_pcb->pcb_onfault = NULL; /* Returns twice, not thrice */
 		return (1);
-
 	}
 	return (0);
 }
@@ -661,8 +654,6 @@ cpu_fetch_syscall_args(struct thread *td)
 		}
 	}
 
- 	if (p->p_sysent->sv_mask)
-		sa->code &= p->p_sysent->sv_mask;
 	if (sa->code >= p->p_sysent->sv_size)
 		sa->callp = &p->p_sysent->sv_table[0];
 	else
@@ -825,7 +816,6 @@ trap_pfault(struct trapframe *frame, int user)
 
 	td = curthread;
 	p = td->td_proc;
-
 	if (frame->exc == EXC_ISI) {
 		eva = frame->srr0;
 		ftype = VM_PROT_EXECUTE;
@@ -893,8 +883,10 @@ trap_pfault(struct trapframe *frame, int user)
 
 	if (rv == KERN_SUCCESS)
 		return (0);
+
 	if (!user && handle_onfault(frame))
 		return (0);
+
 #ifdef DEBUGGING
 	printf("%s vm_fault=>rv = %d -- unhandled\n", __func__, rv);
 	printtrap(frame->exc, frame, 0, (frame->srr1 & PSL_PR));
