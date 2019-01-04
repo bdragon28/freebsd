@@ -105,11 +105,7 @@ vm_paddr_t dmaplimit;
 
 SYSCTL_NODE(_vm, OID_AUTO, pmap, CTLFLAG_RD, 0, "VM/pmap parameters");
 
-#ifdef FULL_FEATURED
 static int pg_ps_enabled = 1;
-#else
-static int pg_ps_enabled = 0;
-#endif
 SYSCTL_INT(_vm_pmap, OID_AUTO, pg_ps_enabled, CTLFLAG_RDTUN | CTLFLAG_NOFETCH,
     &pg_ps_enabled, 0, "Are large page mappings enabled?");
 #ifdef INVARIANTS
@@ -645,21 +641,40 @@ mmu_radix_pmap_ps_enabled(pmap_t pmap)
 	return (pg_ps_enabled && (pmap->pm_flags & PMAP_PDE_SUPERPAGE) != 0);
 }
 
+static pt_entry_t *
+pmap_nofault_pte(pmap_t pmap, vm_offset_t va, int *is_l3e)
+{
+	pml3_entry_t *l3e;
+	pt_entry_t *pte;
+
+	va &= PG_PS_FRAME;
+	l3e = pmap_pml3e(pmap, va);
+	if (l3e == NULL || (*l3e & PG_V) == 0)
+		return (NULL);
+
+	if (*l3e & RPTE_LEAF) {
+		*is_l3e = 1;
+		return (l3e);
+	}
+	*is_l3e = 0;
+	va &= PG_FRAME;
+	pte = pmap_l3e_to_pte(l3e, va);
+	if (pte == NULL || (*pte & PG_V) == 0)
+			return (NULL);
+	return (pte);
+}
+
 int
 pmap_nofault(pmap_t pmap, vm_offset_t va, vm_prot_t flags)
 {
 	pt_entry_t *pte;
 	pt_entry_t startpte, origpte, newpte;
 	vm_page_t m;
+	int is_l3e;
 
 	startpte = 0;
-	va = va & PG_FRAME;
  retry:
-	/*
-	 * XXX this will need to change for superpages
-	 */
-	pte = pmap_pte(pmap, va);
-	if (pte == NULL || (*pte & PG_V) == 0)
+	if ((pte = pmap_nofault_pte(pmap, va, &is_l3e)) == NULL)
 		return (KERN_INVALID_ADDRESS);
 	origpte = newpte = *pte;
 	if (startpte == 0) {
@@ -668,7 +683,7 @@ pmap_nofault(pmap_t pmap, vm_offset_t va, vm_prot_t flags)
 			((flags & VM_PROT_READ) && (startpte & PG_A))) {
 			pmap_invalidate_all(pmap);
 #ifdef INVARIANTS
-			if (VERBOSE_PMAP || pmap_logging)
+			if (VERBOSE_PMAP || pmap_logging || is_l3e)
 				printf("%s(%p, %#lx, %#x) (%#lx) -- invalidate all\n", __func__, pmap, va, flags, origpte);
 #endif
 			return (KERN_FAILURE);
@@ -679,12 +694,13 @@ pmap_nofault(pmap_t pmap, vm_offset_t va, vm_prot_t flags)
 		printf("%s(%p, %#lx, %#x) (%#lx)\n", __func__, pmap, va, flags, origpte);
 #endif
 	PMAP_LOCK(pmap);
-	pte = pmap_pte(pmap, va);
-	if (pte == NULL || *pte != origpte) {
+	if ((pte = pmap_nofault_pte(pmap, va, &is_l3e)) == NULL ||
+		*pte != origpte) {
 		PMAP_UNLOCK(pmap);
 		return (KERN_FAILURE);
 	}
 	m = PHYS_TO_VM_PAGE(newpte & PG_FRAME);
+	MPASS(m != NULL);
 	switch (flags) {
 		case VM_PROT_READ:
 			if ((newpte & (RPTE_EAA_R|RPTE_EAA_X)) == 0)
@@ -694,6 +710,8 @@ pmap_nofault(pmap_t pmap, vm_offset_t va, vm_prot_t flags)
 			break;
 		case VM_PROT_WRITE:
 			if ((newpte & RPTE_EAA_W) == 0)
+				goto protfail;
+			if (is_l3e)
 				goto protfail;
 			newpte |= PG_M;
 			vm_page_dirty(m);
@@ -2436,9 +2454,7 @@ pmap_promote_l3e(pmap_t pmap, pml3_entry_t *pde, vm_offset_t va,
 	vm_page_t mpte;
 
 	PMAP_LOCK_ASSERT(pmap, MA_OWNED);
-#ifndef FULL_FEATURED
-	panic("don't call me!");
-#endif
+
 	/*
 	 * Examine the first PTE in the specified PTP.  Abort if this PTE is
 	 * either invalid, unused, or does not map the first 4KB physical page
@@ -2867,6 +2883,8 @@ pmap_enter_2mpage(pmap_t pmap, vm_offset_t va, vm_page_t m, vm_prot_t prot,
 		newpde |= PG_MANAGED;
 	if (prot & VM_PROT_EXECUTE)
 		newpde |= PG_X;
+	if (prot & VM_PROT_READ)
+		newpde |= RPTE_EAA_R;
 	if (va > DMAP_MIN_ADDRESS)
 		newpde |= RPTE_EAA_P;
 	return (pmap_enter_l3e(pmap, va, newpde, PMAP_ENTER_NOSLEEP |
