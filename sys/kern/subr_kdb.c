@@ -662,7 +662,7 @@ kdb_trap(int type, int code, struct trapframe *tf)
 	if (kdb_active)
 		return (0);
 
-	intr = intr_disable();
+	intr = intr_disable_hard();
 
 	if (!SCHEDULER_STOPPED()) {
 #ifdef SMP
@@ -710,7 +710,7 @@ kdb_trap(int type, int code, struct trapframe *tf)
 #endif
 	}
 
-	intr_restore(intr);
+	intr_restore_hard(intr);
 
 	return (handled);
 }
