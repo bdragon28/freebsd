@@ -683,7 +683,7 @@ pmap_nofault(pmap_t pmap, vm_offset_t va, vm_prot_t flags)
 			((flags & VM_PROT_READ) && (startpte & PG_A))) {
 			pmap_invalidate_all(pmap);
 #ifdef INVARIANTS
-			if (VERBOSE_PMAP || pmap_logging || is_l3e)
+			if (VERBOSE_PMAP || pmap_logging)
 				printf("%s(%p, %#lx, %#x) (%#lx) -- invalidate all\n", __func__, pmap, va, flags, origpte);
 #endif
 			return (KERN_FAILURE);
@@ -861,9 +861,9 @@ pmap_invalidate_l3e_page(pmap_t pmap, vm_offset_t va, pml3_entry_t l3e)
 	 * TLB.
 	 */
 	ptesync();
-	if ((l3e & PG_PROMOTED) != 0) {
+	if ((l3e & PG_PROMOTED) != 0)
 		pmap_invalidate_range(pmap, va, va + L3_PAGE_SIZE - 1);
-	} else
+	else
 		pmap_invalidate_page_2m(pmap, va);
 
 	pmap_invalidate_pwc(pmap);
@@ -2445,7 +2445,7 @@ METHOD(copy_pages) vm_page_t ma[], vm_offset_t a_offset, vm_page_t mb[],
  * aligned, contiguous physical memory and (2) the 4KB page mappings must have
  * identical characteristics. 
  */
-static void
+static int
 pmap_promote_l3e(pmap_t pmap, pml3_entry_t *pde, vm_offset_t va,
     struct rwlock **lockp)
 {
@@ -2464,10 +2464,9 @@ pmap_promote_l3e(pmap_t pmap, pml3_entry_t *pde, vm_offset_t va,
 setpde:
 	newpde = *firstpte;
 	if ((newpde & ((PG_FRAME & L3_PAGE_MASK) | PG_A | PG_V)) != (PG_A | PG_V)) {
-		atomic_add_long(&pmap_l3e_p_failures, 1);
 		CTR2(KTR_PMAP, "pmap_promote_l3e: failure for va %#lx"
 		    " in pmap %p", va, pmap);
-		return;
+		goto fail;
 	}
 	if ((newpde & (PG_M | PG_RW)) == PG_RW) {
 		/*
@@ -2489,10 +2488,9 @@ setpde:
 setpte:
 		oldpte = *pte;
 		if ((oldpte & (PG_FRAME | PG_A | PG_V)) != pa) {
-			atomic_add_long(&pmap_l3e_p_failures, 1);
 			CTR2(KTR_PMAP, "pmap_promote_l3e: failure for va %#lx"
 			    " in pmap %p", va, pmap);
-			return;
+			goto fail;
 		}
 		if ((oldpte & (PG_M | PG_RW)) == PG_RW) {
 			/*
@@ -2507,10 +2505,9 @@ setpte:
 			    (va & ~L3_PAGE_MASK), pmap);
 		}
 		if ((oldpte & PG_PTE_PROMOTE) != (newpde & PG_PTE_PROMOTE)) {
-			atomic_add_long(&pmap_l3e_p_failures, 1);
 			CTR2(KTR_PMAP, "pmap_promote_l3e: failure for va %#lx"
 			    " in pmap %p", va, pmap);
-			return;
+			goto fail;
 		}
 		pa -= PAGE_SIZE;
 	}
@@ -2527,11 +2524,10 @@ setpte:
 	KASSERT(mpte->pindex == pmap_l3e_pindex(va),
 	    ("pmap_promote_l3e: page table page's pindex is wrong"));
 	if (pmap_insert_pt_page(pmap, mpte)) {
-		atomic_add_long(&pmap_l3e_p_failures, 1);
 		CTR2(KTR_PMAP,
 		    "pmap_promote_l3e: failure for va %#lx in pmap %p", va,
 		    pmap);
-		return;
+		goto fail;
 	}
 
 	/*
@@ -2541,10 +2537,13 @@ setpte:
 		pmap_pv_promote_l3e(pmap, va, newpde & PG_PS_FRAME, lockp);
 
 	pte_store(pde, PG_PROMOTED | newpde);
-	ptesync();
 	atomic_add_long(&pmap_l3e_promotions, 1);
 	CTR2(KTR_PMAP, "pmap_promote_l3e: success for va %#lx"
 	    " in pmap %p", va, pmap);
+	return (0);
+ fail:
+	atomic_add_long(&pmap_l3e_p_failures, 1);
+	return (KERN_FAILURE);
 }
 #endif /* VM_NRESERVLEVEL > 0 */
 
@@ -2831,10 +2830,6 @@ validate:
 		ptesync();
 	}
 unchanged:
-	if (invalidate_all)
-		pmap_invalidate_all(pmap);
-	else if (invalidate_page)
-		pmap_invalidate_page(pmap, va);
 
 #if VM_NRESERVLEVEL > 0
 	/*
@@ -2844,9 +2839,14 @@ unchanged:
 	if ((mpte == NULL || mpte->wire_count == NPTEPG) &&
 	    pmap_ps_enabled(pmap) &&
 	    (m->flags & PG_FICTITIOUS) == 0 &&
-	    vm_reserv_level_iffullpop(m) == 0)
-		pmap_promote_l3e(pmap, l3e, va, &lock);
+	    vm_reserv_level_iffullpop(m) == 0 &&
+		pmap_promote_l3e(pmap, l3e, va, &lock) == 0)
+		invalidate_all = true;
 #endif
+	if (invalidate_all)
+		pmap_invalidate_all(pmap);
+	else if (invalidate_page)
+		pmap_invalidate_page(pmap, va);
 
 	rv = KERN_SUCCESS;
 out:
@@ -3862,6 +3862,7 @@ mmu_radix_pmap_page_init(vm_page_t m)
 
 	CTR2(KTR_PMAP, "%s(%p)", __func__, m);
 	TAILQ_INIT(&m->md.pv_list);
+	m->md.pv_magic = 0xCAFEBABE;
 }
 
 int
