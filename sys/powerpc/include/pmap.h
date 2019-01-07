@@ -217,6 +217,7 @@ struct	md_page {
 		};
 		struct {
 			int			pv_gen;   /* (p) */
+			int	pv_magic;
 			TAILQ_HEAD(, pv_entry)	pv_list;  /* (p) */
 		};
 	};
