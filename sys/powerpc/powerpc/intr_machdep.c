@@ -99,7 +99,6 @@ struct powerpc_intr {
 	void	*priv;		/* PIC-private data */
 	u_int	irq;
 	device_t pic;
-	u_int	irq;
 	u_int	intline;
 	u_int	vector;
 	u_int	cntindex;
@@ -200,7 +199,7 @@ smp_intr_init(void *dummy __unused)
 	for (vector = 0; vector < nvectors; vector++) {
 		i = powerpc_intrs[vector];
 		if (i != NULL && i->event != NULL && i->pic == root_pic)
-			PIC_BIND(i->pic, i->intline, i->cpu, &i->priv);
+			PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 	}
 }
 SYSINIT(smp_intr_init, SI_SUB_SMP, SI_ORDER_ANY, smp_intr_init, NULL);
@@ -347,7 +346,7 @@ powerpc_assign_intr_cpu(void *arg, int cpu)
 		CPU_SETOF(cpu, &i->pi_cpuset);
 
 	if (!cold && i->pic != NULL && i->pic == root_pic)
-		PIC_BIND(i->pic, i->intline, i->cpu, &i->priv);
+		PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 
 	return (0);
 #else
@@ -554,7 +553,7 @@ powerpc_setup_intr(const char *name, u_int irq, driver_filter_t filter,
 				PIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
 
 			if (i->pic == root_pic)
-				PIC_BIND(i->pic, i->intline, i->cpu, &i->priv);
+				PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 
 			if (enable)
 				PIC_ENABLE(i->pic, i->intline, i->vector,
