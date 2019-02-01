@@ -2515,20 +2515,12 @@ ieee80211_scanreq(struct ieee80211vap *vap, struct ieee80211_scan_req *sr)
 		    sr->sr_duration > IEEE80211_IOC_SCAN_DURATION_MAX)
 			return EINVAL;
 		sr->sr_duration = msecs_to_ticks(sr->sr_duration);
-		if (sr->sr_duration < 1)
-			sr->sr_duration = 1;
 	}
 	/* convert min/max channel dwell */
-	if (sr->sr_mindwell != 0) {
+	if (sr->sr_mindwell != 0)
 		sr->sr_mindwell = msecs_to_ticks(sr->sr_mindwell);
-		if (sr->sr_mindwell < 1)
-			sr->sr_mindwell = 1;
-	}
-	if (sr->sr_maxdwell != 0) {
+	if (sr->sr_maxdwell != 0)
 		sr->sr_maxdwell = msecs_to_ticks(sr->sr_maxdwell);
-		if (sr->sr_maxdwell < 1)
-			sr->sr_maxdwell = 1;
-	}
 	/* NB: silently reduce ssid count to what is supported */
 	if (sr->sr_nssid > IEEE80211_SCAN_MAX_SSID)
 		sr->sr_nssid = IEEE80211_SCAN_MAX_SSID;
@@ -3480,9 +3472,13 @@ ieee80211_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ieee80211vap *vap = ifp->if_softc;
 	struct ieee80211com *ic = vap->iv_ic;
-	int error = 0, wait = 0;
+	int error = 0, wait = 0, ic_used;
 	struct ifreq *ifr;
 	struct ifaddr *ifa;			/* XXX */
+
+	ic_used = (cmd != SIOCSIFMTU && cmd != SIOCG80211STATS);
+	if (ic_used && (error = ieee80211_com_vincref(vap)) != 0)
+		return (error);
 
 	switch (cmd) {
 	case SIOCSIFFLAGS:
@@ -3620,5 +3616,9 @@ ieee80211_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		error = ether_ioctl(ifp, cmd, data);
 		break;
 	}
+
+	if (ic_used)
+		ieee80211_com_vdecref(vap);
+
 	return (error);
 }
