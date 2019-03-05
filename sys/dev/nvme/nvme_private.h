@@ -340,6 +340,7 @@ struct nvme_controller {
 		    nvme_mmio_offsetof(reg)+4,				       \
 		    (val & 0xFFFFFFFF00000000ULL) >> 32);		       \
 	} while (0);
+#endif
 
 #define nvme_printf(ctrlr, fmt, args...)	\
     device_printf(ctrlr->dev, fmt, ##args)
