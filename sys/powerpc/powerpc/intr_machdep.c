@@ -136,10 +136,15 @@ char *intrnames;
 size_t sintrcnt = sizeof(intrcnt);
 size_t sintrnames = sizeof(intrnames);
 int nintrcnt;
+
 /*
  * Just to start
  */
+#ifdef __powerpc64__
 u_int num_io_irqs = 768;
+#else
+u_int num_io_irqs = 256;
+#endif
 
 device_t root_pic;
 
@@ -174,7 +179,7 @@ intr_init_sources(void *arg __unused)
 	if (mp_ncpus > 1)
 		nintrcnt += 8 * mp_ncpus;
 #endif
-	intrcnt = mallocarray(nintrcnt, CACHE_LINE_SIZE, M_INTR, M_WAITOK |
+	intrcnt = mallocarray(nintrcnt, sizeof(u_long), M_INTR, M_WAITOK |
 	    M_ZERO);
 	intrnames = mallocarray(nintrcnt, MAXCOMLEN + 1, M_INTR, M_WAITOK |
 	    M_ZERO);
@@ -213,7 +218,7 @@ intrcnt_add(const char *name, u_long **countp)
 	idx = atomic_fetchadd_int(&intrcnt_index, 1);
 	KASSERT(idx < nintrcnt, ("intrcnt_add: Interrupt counter index %d/%d"
 		"reached nintrcnt : %d", intrcnt_index, idx, nintrcnt));
-	*countp = &intrcnt[idx*(CACHE_LINE_SIZE/sizeof(u_long))];
+	*countp = &intrcnt[idx];
 	intrcnt_setname(name, idx);
 }
 

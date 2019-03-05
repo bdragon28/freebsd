@@ -360,6 +360,13 @@ void pmap_early_io_unmap(vm_offset_t va, vm_size_t size);
 void pmap_track_page(pmap_t pmap, vm_offset_t va);
 void pmap_page_print_mappings(vm_page_t m);
 
+static inline int
+pmap_vmspace_copy(pmap_t dst_pmap __unused, pmap_t src_pmap __unused)
+{
+
+	return (0);
+}
+
 #endif
 
 #endif /* !_MACHINE_PMAP_H_ */
