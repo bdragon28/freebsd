@@ -777,9 +777,8 @@ cpu_idle_e500mc(sbintime_t sbt)
 #endif
 
 static void
-cpu_idle_booke(sbintime_t sbt __unused)
+cpu_idle_booke(sbintime_t sbt)
 {
-#ifdef BOOKE
 	register_t msr;
 
 	msr = mfmsr();
@@ -821,7 +820,7 @@ cpu_idle_power9(sbintime_t sbt)
 	msr = mfmsr();
 
 	/* Suspend external interrupts until stop instruction completes. */
-	mtmsr_ee(msr &  ~PSL_EE);
+	mtmsr(msr &  ~PSL_EE);
 	/* Set the stop state to lowest latency, wake up to next instruction */
 	mtspr(SPR_PSSCR, 0);
 	/* "stop" instruction (PowerISA 3.0) */
@@ -830,7 +829,7 @@ cpu_idle_power9(sbintime_t sbt)
 	 * Re-enable external interrupts to capture the interrupt that caused
 	 * the wake up.
 	 */
-	mtmsr_ee(msr);
+	mtmsr(msr);
 	
 }
 #endif
