@@ -50,6 +50,7 @@
 #include <machine/trap.h>
 
 #include "mmu_oea64.h"
+#include "opt_ddb.h"
 
 uintptr_t moea64_get_unique_vsid(void);
 void moea64_release_vsid(uint64_t vsid);
@@ -627,3 +628,23 @@ handle_user_slb_spill(pmap_t pm, vm_offset_t addr)
 
 	return (0);
 }
+
+#if defined(DDB)
+#include <sys/kdb.h>
+#include <ddb/ddb.h>
+
+DB_SHOW_COMMAND(slb, slb_show_slb)
+{
+	struct slb *slbcache;
+	uint64_t slbv, slbe;
+	register_t i;
+
+	slbcache = PCPU_GET(aim.slb);
+	for (i = 0; i < n_slbs; i++) {
+		__asm __volatile ("slbmfev %0,%1" : "=r"(slbv) : "r"(i));
+		__asm __volatile ("slbmfee %0,%1" : "=r"(slbe) : "r"(i));
+		db_printf("%02ld: SW 0x%lx/0x%lx HW 0x%lx/0x%lx\n",
+		    i, slbcache[i].slbv, slbcache[i].slbe, slbv, slbe);
+	}
+}
+#endif
