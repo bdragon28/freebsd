@@ -432,7 +432,7 @@ link_elf_init(void* arg)
 		modptr = preload_search_by_type("elf kernel");
 	modname = (char *)preload_search_info(modptr, MODINFO_NAME);
 	if (modname == NULL)
-		modname = "kernel";
+		modname = "/boot/kernel/kernel";
 	linker_kernel_file = linker_make_file(modname, &link_elf_class);
 	if (linker_kernel_file == NULL)
 		panic("%s: Can't create linker structures for kernel",
