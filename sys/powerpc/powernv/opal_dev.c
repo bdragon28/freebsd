@@ -191,7 +191,7 @@ opaldev_attach(device_t dev)
 	do {
 		rv = opal_call(OPAL_RTC_READ, vtophys(&junk), vtophys(&junk));
 		if (rv == OPAL_BUSY_EVENT)
-			rv = opal_call(OPAL_POLL_EVENTS, 0);
+			opal_call(OPAL_POLL_EVENTS, 0);
 	} while (rv == OPAL_BUSY_EVENT);
 
 	if (rv == OPAL_SUCCESS)
@@ -328,7 +328,7 @@ opal_settime(device_t dev, struct timespec *ts)
 	do {
 		rv = opal_call(OPAL_RTC_WRITE, ymd, hmsm);
 		if (rv == OPAL_BUSY_EVENT) {
-			rv = opal_call(OPAL_POLL_EVENTS, 0);
+			opal_call(OPAL_POLL_EVENTS, 0);
 			pause("opalrtc", 1);
 		}
 	} while (rv == OPAL_BUSY_EVENT);
@@ -348,13 +348,19 @@ opaldev_get_devinfo(device_t dev, device_t child)
 static void
 opal_shutdown(void *arg, int howto)
 {
+	int rv;
 
-	if (howto & RB_HALT)
-		opal_call(OPAL_CEC_POWER_DOWN, 0 /* Normal power off */);
-	else
-		opal_call(OPAL_CEC_REBOOT);
+	do {
+		if (howto & RB_HALT)
+			rv = opal_call(OPAL_CEC_POWER_DOWN, 0 /* Normal power off */);
+		else
+			rv = opal_call(OPAL_CEC_REBOOT);
+		opal_call(OPAL_POLL_EVENTS, 0);
+	} while (rv == OPAL_BUSY_EVENT);
 
-	opal_call(OPAL_RETURN_CPU);
+	/* Crank the state machine forever. */
+	for(;;)
+		opal_call(OPAL_POLL_EVENTS, 0);
 }
 
 static void

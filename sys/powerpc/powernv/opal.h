@@ -86,6 +86,7 @@ int opal_call(uint64_t token, ...);
 #define	OPAL_FLASH_READ			110
 #define	OPAL_FLASH_WRITE		111
 #define	OPAL_FLASH_ERASE		112
+#define	OPAL_CEC_REBOOT2		116
 #define	OPAL_INT_GET_XIRR		122
 #define	OPAL_INT_SET_CPPR		123
 #define	OPAL_INT_EOI			124

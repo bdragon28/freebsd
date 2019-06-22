@@ -503,8 +503,17 @@ powernv_smp_topo(platform_t plat)
 static void
 powernv_reset(platform_t platform)
 {
+	int rv;
 
-	opal_call(OPAL_CEC_REBOOT);
+	do {
+		rv = opal_call(OPAL_CEC_REBOOT);
+		opal_call(OPAL_POLL_EVENTS, 0);
+		
+	} while (rv == OPAL_BUSY_EVENT);
+
+	/* Crank the state machine forever. */
+	for (;;)
+		opal_call(OPAL_POLL_EVENTS, 0);
 }
 
 static void
