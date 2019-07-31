@@ -749,6 +749,27 @@ spinlock_exit(void)
 	}
 }
 
+/* XXX REMOVE THIS SECTION -- IFUNC TEST CODE */
+static void
+testifunc_impl(void)
+{
+
+	printf("Hello from implementation!\n");
+}
+
+DEFINE_IFUNC(, void, testifunc, (void))
+{
+	return (testifunc_impl);
+}
+
+#ifdef DDB
+DB_SHOW_COMMAND(ifunctest, db_ifunc_test)
+{
+	testifunc();
+}
+#endif
+/* XXX END REMOVE THIS SECTION */
+
 /*
  * Simple ddb(4) command/hack to view any SPR on the running CPU.
  * Uses a trivial asm function to perform the mfspr, and rewrites the mfspr
