@@ -263,7 +263,7 @@ net_put(struct iodesc *desc, void *pkt, size_t len)
 #if defined(NETIF_DEBUG)
 	printf("net_put: ub_send returned %d\n", rv);
 #endif
-	if (rv == 0)
+	if (rv == 0 || rv == 1 /* BD_ENET_TX_CSL -- ignore */)
 		rv = len;
 	else
 		rv = -1;
@@ -282,7 +282,7 @@ net_get(struct iodesc *desc, void **pkt, time_t timeout)
 	char *buf;
 
 #if defined(NETIF_DEBUG)
-	printf("net_get: pkt %p, timeout %d\n", pkt, timeout);
+	printf("net_get: pkt %p, timeout %lld\n", pkt, timeout);
 #endif
 	t = getsecs();
 	len = sizeof(sc->sc_rxbuf);
