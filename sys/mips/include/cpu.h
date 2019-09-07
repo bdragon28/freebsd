@@ -70,7 +70,9 @@
 #define	TRAPF_PC(framep)	((framep)->pc)
 #define	cpu_getstack(td)	((td)->td_frame->sp)
 #define	cpu_setstack(td, nsp)	((td)->td_frame->sp = (nsp))
+#define	cpu_spinenter()		/* nothing */
 #define	cpu_spinwait()		/* nothing */
+#define	cpu_spinexit()		/* nothing */
 #define	cpu_lock_delay()	DELAY(1)
 
 /*

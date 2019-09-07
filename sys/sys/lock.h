@@ -204,8 +204,10 @@ lock_delay_arg_init_noadapt(struct lock_delay_arg *la)
 #define lock_delay_spin(n)	do {	\
 	u_int _i;			\
 					\
+	cpu_spinenter();		\
 	for (_i = (n); _i > 0; _i--)	\
 		cpu_spinwait();		\
+	cpu_spinexit();			\
 } while (0)
 
 #define	LOCK_DELAY_SYSINIT(func) \

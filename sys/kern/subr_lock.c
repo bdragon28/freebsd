@@ -131,8 +131,10 @@ lock_delay(struct lock_delay_arg *la)
 	if (__predict_false(la->delay > lc->max))
 		la->delay = lc->max;
 
+	cpu_spinenter();
 	for (i = la->delay; i > 0; i--)
 		cpu_spinwait();
+	cpu_spinexit();
 
 	la->spin_cnt += la->delay;
 	if (__predict_false(la->spin_cnt > starvation_limit)) {

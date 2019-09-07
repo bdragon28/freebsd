@@ -269,11 +269,14 @@ generic_stop_cpus(cpuset_t map, u_int type)
 #if X86
 	if (!nmi_is_broadcast || nmi_kdb_lock == 0) {
 #endif
-	if (stopping_cpu != PCPU_GET(cpuid))
+	if (stopping_cpu != PCPU_GET(cpuid)) {
+		cpu_spinenter();
 		while (atomic_cmpset_int(&stopping_cpu, NOCPU,
 		    PCPU_GET(cpuid)) == 0)
 			while (stopping_cpu != NOCPU)
 				cpu_spinwait(); /* spin */
+		cpu_spinexit();
+	}
 
 	/* send the stop IPI to all CPUs in map */
 	ipi_selected(map, type);
@@ -289,6 +292,7 @@ generic_stop_cpus(cpuset_t map, u_int type)
 		cpus = &stopped_cpus;
 
 	i = 0;
+	cpu_spinenter();
 	while (!CPU_SUBSET(cpus, &map)) {
 		/* spin */
 		cpu_spinwait();
@@ -298,6 +302,7 @@ generic_stop_cpus(cpuset_t map, u_int type)
 			break;
 		}
 	}
+	cpu_spinexit();
 
 #if X86
 	if (type == IPI_SUSPEND)
@@ -393,8 +398,10 @@ generic_restart_cpus(cpuset_t map, u_int type)
 
 	if (!nmi_is_broadcast || nmi_kdb_lock == 0) {
 		/* wait for each to clear its bit */
+		cpu_spinenter();
 		while (CPU_OVERLAP(cpus, &map))
 			cpu_spinwait();
+		cpu_spinexit();
 	}
 #else /* !X86 */
 	KASSERT(type == IPI_STOP || type == IPI_STOP_HARD,
@@ -411,8 +418,10 @@ generic_restart_cpus(cpuset_t map, u_int type)
 	CPU_COPY_STORE_REL(&map, &started_cpus);
 
 	/* wait for each to clear its bit */
+	cpu_spinenter();
 	while (CPU_OVERLAP(cpus, &map))
 		cpu_spinwait();
+	cpu_spinexit();
 #endif
 	return (1);
 }
@@ -457,8 +466,10 @@ smp_rendezvous_action(void)
 
 	/* Ensure we have up-to-date values. */
 	atomic_add_acq_int(&smp_rv_waiters[0], 1);
+	cpu_spinenter();
 	while (smp_rv_waiters[0] < smp_rv_ncpus)
 		cpu_spinwait();
+	cpu_spinexit();
 
 	/* Fetch rendezvous parameters after acquire barrier. */
 	local_func_arg = smp_rv_func_arg;
@@ -503,8 +514,10 @@ smp_rendezvous_action(void)
 		if (smp_rv_setup_func != NULL)
 			smp_rv_setup_func(smp_rv_func_arg);
 		atomic_add_int(&smp_rv_waiters[1], 1);
+		cpu_spinenter();
 		while (smp_rv_waiters[1] < smp_rv_ncpus)
                 	cpu_spinwait();
+		cpu_spinexit();
 	}
 
 	if (local_action_func != NULL)
@@ -517,8 +530,10 @@ smp_rendezvous_action(void)
 		 * wait here until all CPUs have finished the main action.
 		 */
 		atomic_add_int(&smp_rv_waiters[2], 1);
+		cpu_spinenter();
 		while (smp_rv_waiters[2] < smp_rv_ncpus)
 			cpu_spinwait();
+		cpu_spinexit();
 
 		if (local_teardown_func != NULL)
 			local_teardown_func(local_func_arg);
@@ -613,8 +628,10 @@ smp_rendezvous_cpus(cpuset_t map,
 	 * all memory actions done by the called functions on other
 	 * CPUs.
 	 */
+	cpu_spinenter();
 	while (atomic_load_acq_int(&smp_rv_waiters[3]) < ncpus)
 		cpu_spinwait();
+	cpu_spinexit();
 
 	mtx_unlock_spin(&smp_ipi_mtx);
 }

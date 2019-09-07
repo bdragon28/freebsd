@@ -56,7 +56,9 @@ get_cyclecount(void)
 
 #define cpu_getstack(td)	((td)->td_frame->tf_usr_sp)
 #define cpu_setstack(td, sp)	((td)->td_frame->tf_usr_sp = (sp))
+#define	cpu_spinenter()		/* nothing */
 #define cpu_spinwait()		/* nothing */
+#define	cpu_spinexit()		/* nothing */
 #define	cpu_lock_delay()	DELAY(1)
 
 #define ARM_NVEC		8

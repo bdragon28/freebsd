@@ -128,7 +128,9 @@ get_cyclecount(void)
 }
 
 #define	cpu_getstack(td)	((td)->td_frame->fixreg[1])
-#define	cpu_spinwait()		__asm __volatile("or 27,27,27") /* yield */
+#define	cpu_spinenter()		__asm __volatile("or 31,31,31" ::: "memory") /* low prio */
+#define	cpu_spinwait()		__asm __volatile("xori 0,0,0" ::: "memory") /* no-op */
+#define	cpu_spinexit()		__asm __volatile("or 2,2,2" ::: "memory") /* medium prio */
 #define	cpu_lock_delay()	DELAY(1)
 
 extern char btext[];

@@ -2842,11 +2842,13 @@ sched_idletd(void *dummy)
 		 * cycles from cores doing useful work.
 		 */
 		if (TDQ_IDLESPIN(tdq) && switchcnt > sched_idlespinthresh) {
+			cpu_spinenter();
 			for (i = 0; i < sched_idlespins; i++) {
 				if (tdq->tdq_load)
 					break;
 				cpu_spinwait();
 			}
+			cpu_spinexit();
 		}
 
 		/* If there was context switch during spin, restart it. */
