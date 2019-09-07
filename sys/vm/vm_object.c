@@ -2703,8 +2703,9 @@ DB_SHOW_COMMAND(vmochk, vm_object_check)
 			}
 			if (!vm_object_in_map(object)) {
 				db_printf(
-			"vmochk: internal obj is not in a map: "
+			"vmochk: internal obj %p is not in a map: "
 			"ref: %d, size: %lu: 0x%lx, backing_object: %p\n",
+				    object,
 				    object->ref_count, (u_long)object->size, 
 				    (u_long)object->size,
 				    (void *)object->backing_object);
