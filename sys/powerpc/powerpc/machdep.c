@@ -164,6 +164,37 @@ uintptr_t	powerpc_init(vm_offset_t, vm_offset_t, vm_offset_t, void *,
 
 static void	fake_preload_metadata(void);
 
+#ifdef	EARLY_PRINTF
+#define	POWERPC_EARLYCONS_SZ	8192
+
+static char early_console_buffer[POWERPC_EARLYCONS_SZ];
+static int early_console_pos = 0;
+
+static void
+powerpc_earlycons_putc(int c)
+{
+	if (!early_console_pos)
+		bzero(&early_console_buffer, POWERPC_EARLYCONS_SZ);
+	early_console_buffer[early_console_pos] = (char) c;
+	early_console_pos++;
+	if (early_console_pos >= POWERPC_EARLYCONS_SZ) {
+		/* Wrap buffer if overflowed but do not clear again */
+		early_console_buffer[0] = '\0';
+		early_console_pos = 1;
+	}
+}
+
+static void
+powerpc_earlycons_replay()
+{
+	for (int i = 0; i < POWERPC_EARLYCONS_SZ ; i++)
+		cnputc(early_console_buffer[i]);
+}
+
+early_putc_t *early_putc = powerpc_earlycons_putc;
+
+#endif
+
 long		Maxmem = 0;
 long		realmem = 0;
 
@@ -419,6 +450,9 @@ powerpc_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
 	 * Initialize the console before printing anything.
 	 */
 	cninit();
+#ifdef  EARLY_PRINTF
+	powerpc_earlycons_replay();
+#endif
 
 #ifdef AIM
 	aim_cpu_init(toc);
