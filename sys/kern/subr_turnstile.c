@@ -1112,6 +1112,7 @@ print_queue(struct threadqueue *queue, const char *header, const char *prefix)
 	}
 	TAILQ_FOREACH(td, queue, td_lockq) {
 		print_thread(td, prefix);
+kdb_backtrace_thread(td);
 	}
 }
 
