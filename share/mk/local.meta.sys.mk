@@ -20,6 +20,30 @@ TARGET_ARCHES_mips?=    mipsel mips mips64el mips64 mipsn32 mipsn32el
 TARGET_ARCHES_powerpc?= powerpc powerpc64 powerpc64le powerpcspe
 TARGET_ARCHES_riscv?=   riscv64 riscv64sf
 
+# Set target-specific linker emulation name. (from sys/conf/kern.mk)
+LD_EMULATION_aarch64=	aarch64fbsd
+LD_EMULATION_amd64=	elf_x86_64_fbsd
+LD_EMULATION_arm=	armelf_fbsd
+LD_EMULATION_armv6=	armelf_fbsd
+LD_EMULATION_armv7=	armelf_fbsd
+LD_EMULATION_i386=	elf_i386_fbsd
+LD_EMULATION_mips=	elf32btsmip_fbsd
+LD_EMULATION_mipshf=	elf32btsmip_fbsd
+LD_EMULATION_mips64=	elf64btsmip_fbsd
+LD_EMULATION_mips64hf=	elf64btsmip_fbsd
+LD_EMULATION_mipsel=	elf32ltsmip_fbsd
+LD_EMULATION_mipselhf=	elf32ltsmip_fbsd
+LD_EMULATION_mips64el=	elf64ltsmip_fbsd
+LD_EMULATION_mips64elhf=elf64ltsmip_fbsd
+LD_EMULATION_mipsn32=	elf32btsmipn32_fbsd
+LD_EMULATION_mipsn32el=	elf32ltsmipn32_fbsd
+LD_EMULATION_powerpc=	elf32ppc_fbsd
+LD_EMULATION_powerpcspe=elf32ppc_fbsd
+LD_EMULATION_powerpc64=	elf64ppc_fbsd
+LD_EMULATION_riscv64=	elf64lriscv_fbsd
+LD_EMULATION_sparc64=	elf64_sparc_fbsd
+LD_EMULATION=${LD_EMULATION_${MACHINE_ARCH}}
+
 # some corner cases
 BOOT_MACHINE_DIR.amd64 = boot/i386
 MACHINE_ARCH.host = ${_HOST_ARCH}
@@ -252,7 +276,7 @@ FREEBSD_REVISION!= sed -n '/^REVISION=/{s,.*=,,;s,",,g;p; }' ${SRCTOP}/sys/conf/
 CROSS_TARGET_FLAGS= -target ${MACHINE_ARCH}-unknown-freebsd${FREEBSD_REVISION}
 CFLAGS+= ${CROSS_TARGET_FLAGS}
 ACFLAGS+= ${CROSS_TARGET_FLAGS}
-LDFLAGS+= -Wl,-m -Wl,elf_${MACHINE_ARCH}_fbsd
+LDFLAGS+= -Wl,-m -Wl,${LD_EMULATION}
 .endif
 
 META_MODE+=	missing-meta=yes
