@@ -1,0 +1,6 @@
+# Build test for non-fdt kernel
+include GENERIC
+
+ident   NOFDT
+
+nooptions FDT

@@ -1,0 +1,27 @@
+include GENERIC64-NODEBUG 
+
+ident   BDRAGON-PERF
+
+options ZFS
+#options EARLY_AP_STARTUP
+options VERBOSE_SYSINIT
+
+#options KTR
+#options KTR_COMPILE=(KTR_LOCK)
+#options KTR_MASK=KTR_LOCK
+#options KTR_ENTRIES=4096
+
+# Ensure tmpfs is compiled in.
+options TMPFS
+options NULLFS
+options AUTOFS
+
+device dtrace
+options KTRACE
+
+
+#options       WITNESS
+#options	WITNESS_COUNT=2048
+#nooptions       WITNESS_SKIPSPIN
+#options       DEADLKRES
+

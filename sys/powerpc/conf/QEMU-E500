@@ -1,0 +1,31 @@
+include MPC85XXSPE
+
+ident   QEMU-E500
+
+#makeoptions	NO_MODULES=yes
+
+#options EARLY_AP_STARTUP
+options VERBOSE_SYSINIT
+options	BOOTVERBOSE=1
+
+options         MAXCPU=8
+
+device		virtio			# Generic VirtIO bus (required)
+device		virtio_pci		# VirtIO PCI device
+device		virtio_blk		# VirtIO Block device
+device		virtio_scsi		# VirtIO SCSI device
+device		virtio_balloon		# VirtIO Memory Balloon device
+
+device		iflib
+device		netmap
+device          em              # Intel PRO/1000 Gigabit Ethernet Family
+
+# PCI Ethernet NICs that use the common MII bus controller code.
+device          miibus          # MII bus support
+device          re              # RealTek 8139C+/8169/8169S/8110S
+device          rl              # RealTek 8129/8139
+
+device		ahci
+device		nvme
+device		nvd
+

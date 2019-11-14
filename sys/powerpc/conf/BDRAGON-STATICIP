@@ -1,0 +1,22 @@
+include GENERIC64-NODEBUG 
+
+ident   BDRAGON-STATICIP
+
+options ZFS
+#options EARLY_AP_STARTUP
+options VERBOSE_SYSINIT
+
+#options KTR
+#options KTR_COMPILE=(KTR_BUSDMA|KTR_GEOM)
+#options KTR_MASK=KTR_BUSDMA
+#options KTR_ENTRIES=4096
+
+
+#options       WITNESS
+#options	WITNESS_COUNT=2048
+#nooptions       WITNESS_SKIPSPIN
+#options       DEADLKRES
+
+nooptions BOOTP
+nooptions BOOTP_NFSROOT
+

@@ -1,0 +1,17 @@
+include GENERIC
+
+ident   GENERIC-CONSOLEDEBUG
+
+#nooptions TCP_RFC7413
+
+nodevice vt
+
+nodevice uhid
+nodevice ukbd
+nodevice ums
+nodevice ugen
+
+nodevice ohci
+nodevice ehci
+nodevice uhci
+

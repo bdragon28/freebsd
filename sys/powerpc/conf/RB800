@@ -1,0 +1,8 @@
+include MPC85XXSPE
+
+ident   RB800
+
+device ahci
+
+options TMPFS
+options AUTOFS

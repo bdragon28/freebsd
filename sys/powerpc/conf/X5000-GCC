@@ -1,0 +1,16 @@
+#
+# AmigaOne X5000 by A-Eon Technology 
+#
+# $FreeBSD$
+
+include		QORIQ64-GCC
+#include		QORIQ64
+
+ident		X5000
+
+options		AMIGAONE
+
+options		VERBOSE_SYSINIT
+
+# Broken stuff
+nodevice	ehci
