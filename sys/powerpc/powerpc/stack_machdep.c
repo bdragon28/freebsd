@@ -70,8 +70,29 @@ stack_capture(struct stack *st, vm_offset_t frame)
 	    #else
 		callpc = *(vm_offset_t *)(frame + 4) - 4;
 	    #endif
+		/*
+		 * Stop on misaligned and overly-low addresses.
+		 */
 		if ((callpc & 3) || (callpc < 0x100))
 			break;
+
+	    #ifdef __powerpc64__
+		/*
+		 * On 64-bit, stop on anything between userspace and DMAP.
+		 * Reading from addresses in this range is unsafe due to
+		 * possible side effects.
+		 */
+		if ((callpc > VM_MAXUSER_ADDRESS) && (callpc < DMAP_BASE_ADDRESS))
+			break;
+
+		/*
+		 * Also stop on 0xd000000000000000-0xdfffffffffffffff.
+		 * It is currently reserved for future use.
+		 */
+		if ((callpc > 0xd000000000000000ULL) &&
+		    (callpc < 0xe000000000000000ULL))
+			break;
+	    #endif
 
 		/*
 		 * Don't bother traversing trap-frames - there should
