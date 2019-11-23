@@ -1296,6 +1296,9 @@ namespace llvm {
   bool isIntS16Immediate(SDNode *N, int16_t &Imm);
   bool isIntS16Immediate(SDValue Op, int16_t &Imm);
 
+  bool isIntU8Immediate(SDNode *N, uint8_t &Imm);
+  bool isIntU8Immediate(SDValue Op, uint8_t &Imm);
+
   bool convertToNonDenormSingle(APInt &ArgAPInt);
   bool convertToNonDenormSingle(APFloat &ArgAPFloat);
 

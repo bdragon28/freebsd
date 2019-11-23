@@ -2413,18 +2413,43 @@ bool llvm::isIntS16Immediate(SDValue Op, int16_t &Imm) {
 }
 
 
-/// SelectAddressEVXRegReg - Given the specified address, check to see if it can
-/// be represented as an indexed [r+r] operation.
+/// isIntU8Immediate - This method tests to see if the node is either a 32-bit
+/// or 64-bit immediate, and if the value can be accurately represented as a
+/// zero (unsigned) extension from an 8-bit value.  If so, this returns true and
+/// the immediate.
+bool llvm::isIntU8Immediate(SDNode *N, uint8_t &Imm) {
+  if (!isa<ConstantSDNode>(N))
+    return false;
+  Imm = (uint8_t)cast<ConstantSDNode>(N)->getZExtValue();
+  if (N->getValueType(0) == MVT::i32)
+    return Imm == (int32_t)cast<ConstantSDNode>(N)->getZExtValue();
+  else
+    return Imm == (int64_t)cast<ConstantSDNode>(N)->getZExtValue();
+}
+bool llvm::isIntU8Immediate(SDValue Op, uint8_t &Imm) {
+  return isIntU8Immediate(Op.getNode(), Imm);
+}
+
+
+/// SelectAddressEVXRegReg - Given the specified address, check to see if it
+/// must be represented as an indexed [r+r] operation for EVLDD and EVSTD
+/// instructions.  If the address is known now, it will be checked if it fits
+/// into the 8-bit offset, with an alignment of 8.
 bool PPCTargetLowering::SelectAddressEVXRegReg(SDValue N, SDValue &Base,
                                                SDValue &Index,
                                                SelectionDAG &DAG) const {
+  const unsigned EVXEncodingAlignment = 8;
   for (SDNode::use_iterator UI = N->use_begin(), E = N->use_end();
       UI != E; ++UI) {
     if (MemSDNode *Memop = dyn_cast<MemSDNode>(*UI)) {
       if (Memop->getMemoryVT() == MVT::f64) {
-          Base = N.getOperand(0);
-          Index = N.getOperand(1);
-          return true;
+        uint8_t imm = 0;
+        if (isIntU8Immediate(N.getOperand(1), imm)
+            && !(imm % EVXEncodingAlignment))
+          return false; // Offset is okay for the 8-bit index
+        Base = N.getOperand(0);
+        Index = N.getOperand(1);
+        return true; // Offset is unknown or too large, so use [r+r]
       }
     }
   }
