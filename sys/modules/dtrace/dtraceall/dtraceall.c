@@ -75,7 +75,7 @@ MODULE_DEPEND(dtraceall, dtnfscl, 1, 1, 1);
     defined(__powerpc__) || defined(__riscv)
 MODULE_DEPEND(dtraceall, fbt, 1, 1, 1);
 #endif
-#if defined(__amd64__) || defined(__i386__)
+#if defined(__amd64__) || defined(__i386__) || defined(__powerpc64__)
 MODULE_DEPEND(dtraceall, fasttrap, 1, 1, 1);
 #endif
 MODULE_DEPEND(dtraceall, sdt, 1, 1, 1);

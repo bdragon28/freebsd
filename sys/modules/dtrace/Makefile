@@ -25,6 +25,9 @@ SUBDIR+=	systrace_linux32
     ${MACHINE_ARCH} == "powerpc64"
 SUBDIR+=	systrace_freebsd32
 .endif
+.if ${MACHINE_ARCH} == "powerpc64"
+SUBDIR+=	fasttrap
+.endif
 .if ${MACHINE_CPUARCH} == "aarch64" || \
     ${MACHINE_CPUARCH} == "arm" || \
     ${MACHINE_CPUARCH} == "mips" || \
