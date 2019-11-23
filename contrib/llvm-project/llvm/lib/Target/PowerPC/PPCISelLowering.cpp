@@ -3260,7 +3260,7 @@ SDValue PPCTargetLowering::LowerVAARG(SDValue Op, SelectionDAG &DAG) const {
                                     VAListPtr, MachinePointerInfo(SV), MVT::i8);
   InChain = GprIndex.getValue(1);
 
-  if (VT == MVT::i64) {
+  if (VT == MVT::i64 || (hasSPE() && VT == MVT::f64)) {
     // Check if GprIndex is even
     SDValue GprAnd = DAG.getNode(ISD::AND, dl, MVT::i32, GprIndex,
                                  DAG.getConstant(1, dl, MVT::i32));
