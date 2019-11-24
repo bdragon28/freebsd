@@ -298,7 +298,7 @@ def CSR_SPE : CalleeSavedRegs<(add S14, S15, S16, S17, S18, S19, S20, S21, S22,
 
 def CSR_SVR432_Altivec : CalleeSavedRegs<(add CSR_SVR432, CSR_Altivec)>;
 
-def CSR_SVR432_SPE : CalleeSavedRegs<(add CSR_SVR432_COMM, CSR_SPE)>;
+def CSR_SVR432_SPE : CalleeSavedRegs<(add CSR_SPE, CR2, CR3, CR4)>;
 
 def CSR_AIX32 : CalleeSavedRegs<(add R13, R14, R15, R16, R17, R18, R19, R20,
                                      R21, R22, R23, R24, R25, R26, R27, R28,
@@ -344,9 +344,9 @@ def CSR_SVR32_ColdCC_Altivec : CalleeSavedRegs<(add CSR_SVR32_ColdCC,
                                             (sequence "V%u", 0, 1),
                                             (sequence "V%u", 3, 31))>;
 
-def CSR_SVR32_ColdCC_SPE : CalleeSavedRegs<(add CSR_SVR32_ColdCC_Common,
-                                            (sequence "S%u", 4, 10),
-                                            (sequence "S%u", 14, 31))>;
+def CSR_SVR32_ColdCC_SPE : CalleeSavedRegs<(add (sequence "S%u", 4, 10),
+                                            (sequence "S%u", 14, 31),
+                                            (sequence "CR%u", 0, 7))>;
 
 def CSR_SVR64_ColdCC : CalleeSavedRegs<(add  (sequence "X%u", 4, 10),
                                              (sequence "X%u", 14, 31),
