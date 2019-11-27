@@ -281,7 +281,7 @@ bool		moea64_has_lp_4k_16m = false;
  */
 static int	moea64_pvo_enter(struct pvo_entry *pvo,
 		    struct pvo_head *pvo_head, struct pvo_entry **oldpvo);
-static void	moea64_pvo_remove_from_pmap(struct pvo_entry *pvo);
+static void	moea64_pvo_remove_from_pmap(struct pvo_entry *pvo, bool);
 static void	moea64_pvo_remove_from_page(struct pvo_entry *pvo);
 static void	moea64_pvo_remove_from_page_locked(
 		    struct pvo_entry *pvo, vm_page_t m);
@@ -1731,7 +1731,7 @@ moea64_enter(pmap_t pmap, vm_offset_t va, vm_page_t m,
 			/* Otherwise, need to kill it first */
 			KASSERT(oldpvo->pvo_pmap == pmap, ("pmap of old "
 			    "mapping does not match new mapping"));
-			moea64_pvo_remove_from_pmap(oldpvo);
+			moea64_pvo_remove_from_pmap(oldpvo, true);
 			moea64_pvo_enter(pvo, pvo_head, NULL);
 		}
 	}
@@ -2193,7 +2193,7 @@ moea64_kenter_attr(vm_offset_t va, vm_paddr_t pa, vm_memattr_t ma)
 	PMAP_LOCK(kernel_pmap);
 	oldpvo = moea64_pvo_find_va(kernel_pmap, va);
 	if (oldpvo != NULL)
-		moea64_pvo_remove_from_pmap(oldpvo);
+		moea64_pvo_remove_from_pmap(oldpvo, true);
 	init_pvo_entry(pvo, kernel_pmap, va);
 	error = moea64_pvo_enter(pvo, NULL, NULL);
 	PMAP_UNLOCK(kernel_pmap);
@@ -2701,22 +2701,27 @@ moea64_remove_pages(pmap_t pm)
 {
 	struct pvo_entry *pvo, *tpvo;
 	struct pvo_dlist tofree;
+	struct pvo_tree wired = RB_INITIALIZER(&wired);
 
 	SLIST_INIT(&tofree);
 
 	PMAP_LOCK(pm);
+	/*
+	 * For performance reasons, add wired pages to a new PVO RB_TREE, and
+	 * only update PTE metadata for the pages being removed.  Common sense
+	 * says the most often used pages are not going to be wired, so only pay
+	 * the rebalance penalty on wired pages.
+	 */
 	RB_FOREACH_SAFE(pvo, pvo_tree, &pm->pmap_pvo, tpvo) {
-		if (pvo->pvo_vaddr & PVO_WIRED)
+		if (pvo->pvo_vaddr & PVO_WIRED) {
+			RB_REMOVE(pvo_tree, &pm->pmap_pvo, pvo);
+			RB_INSERT(pvo_tree, &wired, pvo);
 			continue;
-
-		/*
-		 * For locking reasons, remove this from the page table and
-		 * pmap, but save delinking from the vm_page for a second
-		 * pass
-		 */
-		moea64_pvo_remove_from_pmap(pvo);
+		}
+		moea64_pvo_remove_from_pmap(pvo, false);
 		SLIST_INSERT_HEAD(&tofree, pvo, pvo_dlink);
 	}
+	RB_ROOT(&pm->pmap_pvo) = RB_ROOT(&wired);
 	PMAP_UNLOCK(pm);
 
 	while (!SLIST_EMPTY(&tofree)) {
@@ -2755,7 +2760,7 @@ moea64_remove_locked(pmap_t pm, vm_offset_t sva, vm_offset_t eva,
 		 * pmap, but save delinking from the vm_page for a second
 		 * pass
 		 */
-		moea64_pvo_remove_from_pmap(pvo);
+		moea64_pvo_remove_from_pmap(pvo, true);
 		SLIST_INSERT_HEAD(tofree, pvo, pvo_dlink);
 	}
 }
@@ -2813,21 +2818,23 @@ moea64_remove_all(vm_page_t m)
 				    __func__);
 				moea64_sp_demote(pvo);
 			}
-			moea64_pvo_remove_from_pmap(pvo);
+			moea64_pvo_remove_from_pmap(pvo, true);
 		}
 		moea64_pvo_remove_from_page_locked(pvo, m);
 		if (!wasdead)
 			LIST_INSERT_HEAD(&freequeue, pvo, pvo_vlink);
 		PMAP_UNLOCK(pmap);
-		
 	}
-	KASSERT(!pmap_page_is_mapped(m), ("Page still has mappings"));
-	KASSERT((m->a.flags & PGA_WRITEABLE) == 0, ("Page still writable"));
+	LIST_SWAP(&freequeue, vm_page_to_pvoh(m), pvo_entry, pvo_vlink);
+	vm_page_aflag_clear(m, PGA_WRITEABLE | PGA_EXECUTABLE);
 	PV_PAGE_UNLOCK(m);
 
 	/* Clean up UMA allocations */
-	LIST_FOREACH_SAFE(pvo, &freequeue, pvo_vlink, next_pvo)
+	LIST_FOREACH_SAFE(pvo, &freequeue, pvo_vlink, next_pvo) {
 		free_pvo_entry(pvo);
+		STAT_MOEA64(moea64_pvo_entries--);
+		STAT_MOEA64(moea64_pvo_remove_calls++);
+	}
 }
 
 /*
@@ -2933,7 +2940,7 @@ moea64_pvo_enter(struct pvo_entry *pvo, struct pvo_head *pvo_head,
 }
 
 static void
-moea64_pvo_remove_from_pmap(struct pvo_entry *pvo)
+moea64_pvo_remove_from_pmap(struct pvo_entry *pvo, bool remove)
 {
 	struct	vm_page *pg;
 	int32_t refchg;
@@ -2967,7 +2974,8 @@ moea64_pvo_remove_from_pmap(struct pvo_entry *pvo)
 	/*
 	 * Remove this PVO from the pmap list.
 	 */
-	RB_REMOVE(pvo_tree, &pvo->pvo_pmap->pmap_pvo, pvo);
+	if (remove)
+		RB_REMOVE(pvo_tree, &pvo->pvo_pmap->pmap_pvo, pvo);
 
 	/*
 	 * Mark this for the next sweep
@@ -4082,7 +4090,7 @@ moea64_sp_remove(struct pvo_entry *sp, struct pvo_dlist *tofree)
 		 * pmap, but save delinking from the vm_page for a second
 		 * pass
 		 */
-		moea64_pvo_remove_from_pmap(pvo);
+		moea64_pvo_remove_from_pmap(pvo, false);
 		SLIST_INSERT_HEAD(tofree, pvo, pvo_dlink);
 	}
 
