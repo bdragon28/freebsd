@@ -138,6 +138,7 @@ SECTIONS
     PROVIDE (__sbss_end = .);
   }
   .plt   : { *(.plt) }
+  .iplt  : { *(.iplt) }
   .bss       :
   {
    PROVIDE (__bss_start = .);
