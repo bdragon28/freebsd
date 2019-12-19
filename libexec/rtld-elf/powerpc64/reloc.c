@@ -494,12 +494,6 @@ reloc_jmpslot(Elf_Addr *wherep, Elf_Addr target, const Obj_Entry *defobj __unuse
     const Obj_Entry *obj __unused, const Elf_Rel *rel __unused)
 {
 
-	/*
-	 * At the PLT entry pointed at by `wherep', construct
-	 * a direct transfer to the now fully resolved function
-	 * address.
-	 */
-
 #if !defined(_CALL_ELF) || _CALL_ELF == 1
 	dbg(" reloc_jmpslot: where=%p, target=%p (%#lx + %#lx)",
 	    (void *)wherep, (void *)target, *(Elf_Addr *)target,
