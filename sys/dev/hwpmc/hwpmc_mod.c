@@ -1783,7 +1783,7 @@ pmc_process_mmap(struct thread *td, struct pmckern_map_in *pkm)
 			pmclog_process_map_in(pm->pm_owner,
 			    pid, pkm->pm_address, fullpath);
 
-  done:
+done:
 	if (freepath)
 		free(freepath, M_TEMP);
 	PMC_EPOCH_EXIT();

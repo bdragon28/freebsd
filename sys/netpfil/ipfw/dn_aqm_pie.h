@@ -136,7 +136,7 @@ drop_early(struct pie_status *pst, uint32_t qlen)
 	if (pprms->flags & PIE_DERAND_ENABLED) {
 		if(pst->accu_prob < (uint64_t) (PIE_MAX_PROB * 17 / 20))
 			return ENQUE;
-		 if( pst->accu_prob >= (uint64_t) (PIE_MAX_PROB * 17 / 2))
+		if(pst->accu_prob >= (uint64_t) (PIE_MAX_PROB * 17 / 2))
 			return DROP;
 	}
 

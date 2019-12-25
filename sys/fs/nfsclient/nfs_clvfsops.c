@@ -1935,12 +1935,12 @@ nfs_sysctl(struct mount *mp, fsctlop_t op, struct sysctl_req *req)
 			error = vfs_suser(mp, req->td);
 			if (error)
 				return (error);
- 			error = SYSCTL_IN(req, &nmp->nm_tprintf_initial_delay,
- 			    sizeof(nmp->nm_tprintf_initial_delay));
- 			if (error)
- 				return (error);
- 			if (nmp->nm_tprintf_initial_delay < 0)
- 				nmp->nm_tprintf_initial_delay = 0;
+			error = SYSCTL_IN(req, &nmp->nm_tprintf_initial_delay,
+			    sizeof(nmp->nm_tprintf_initial_delay));
+			if (error)
+				return (error);
+			if (nmp->nm_tprintf_initial_delay < 0)
+				nmp->nm_tprintf_initial_delay = 0;
  		}
 		break;
 	default:

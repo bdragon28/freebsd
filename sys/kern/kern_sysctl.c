@@ -2275,8 +2275,8 @@ sys___sysctl(struct thread *td, struct sysctl_args *uap)
 	if (uap->namelen > CTL_MAXNAME || uap->namelen < 2)
 		return (EINVAL);
 
- 	error = copyin(uap->name, &name, uap->namelen * sizeof(int));
- 	if (error)
+	error = copyin(uap->name, &name, uap->namelen * sizeof(int));
+	if (error)
 		return (error);
 
 	error = userland_sysctl(td, name, uap->namelen,

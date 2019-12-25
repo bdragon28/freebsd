@@ -277,12 +277,12 @@ cc_query_check(struct ccuser *user)
 
 	switch (user->state) {
 
-	  case USER_OUT_PREPARING:
-	  case USER_IN_ARRIVED:
-	  case USER_ACTIVE:
+	case USER_OUT_PREPARING:
+	case USER_IN_ARRIVED:
+	case USER_ACTIVE:
 		return (TAILQ_FIRST(&user->connq));
 
-	  case USER_NULL:
+	case USER_NULL:
 		/* if we are waiting for the SETUP_confirm, we are in
 		 * the NULL state still (we are the new endpoint), but
 		 * have a connection in 'accepted' that is in the
@@ -293,7 +293,7 @@ cc_query_check(struct ccuser *user)
 			return (user->accepted);
 		/* FALLTHRU */
 
-	  default:
+	default:
 		return (NULL);
 	}
 }

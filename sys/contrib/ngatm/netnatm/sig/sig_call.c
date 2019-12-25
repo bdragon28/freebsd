@@ -2863,7 +2863,7 @@ un10n8_add_party_ack(struct call *c, struct uni_msg *m, struct uni_all *u,
 		uni_bad_message(c, u, UNI_CAUSE_MSG_INCOMP,
 		    &u->u.add_party_ack.epref, p->state);
 
-  ignore:
+ignore:
 	uni_msg_destroy(m);
 	UNI_FREE(u);
 }
@@ -2963,7 +2963,7 @@ unx_party_alerting(struct call *c, struct uni_msg *m, struct uni_all *u,
 		uni_bad_message(c, u, UNI_CAUSE_MSG_INCOMP,
 		    &u->u.party_alerting.epref, p->state);
 
-  ignore:
+ignore:
 	uni_msg_destroy(m);
 	UNI_FREE(u);
 }

@@ -1056,8 +1056,8 @@ nfs_setattr(struct vop_setattr_args *ap)
 			    vap->va_uid == (uid_t)VNOVAL &&
 			    vap->va_gid == (gid_t)VNOVAL)
 				return (0);		
- 			vap->va_size = VNOVAL;
- 			break;
+			vap->va_size = VNOVAL;
+			break;
  		default:
 			/*
 			 * Disallow write attempts if the filesystem is

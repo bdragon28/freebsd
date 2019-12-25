@@ -234,7 +234,7 @@ unisve_overlap_sap(const struct uni_sap *s1, const struct uni_sap *s2)
 
 	if (any1 && any2)
 		return (1);
-	 if(any1 || any2)
+	if (any1 || any2)
 		return (0);
 
 	return (unisve_overlap_addr(&s1->addr, &s2->addr) &&
