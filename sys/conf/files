@@ -2338,7 +2338,7 @@ dev/ixgbe/ixgbe_dcb_82599.c	optional ix inet | ixv inet \
 	compile-with "${NORMAL_C} -I$S/dev/ixgbe"
 dev/jedec_dimm/jedec_dimm.c	optional jedec_dimm smbus
 dev/jme/if_jme.c		optional jme pci
-dev/kbd/kbd.c			optional atkbd | pckbd | sc | ukbd | vt | hkbd
+dev/kbd/kbd.c			optional atkbd | pckbd | sc | ukbd | vt | hkbd | adb
 dev/kbdmux/kbdmux.c		optional kbdmux
 dev/ksyms/ksyms.c		optional ksyms
 dev/le/am7990.c			optional le
