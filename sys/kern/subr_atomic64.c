@@ -37,6 +37,7 @@
 
 #include <machine/atomic.h>
 #include <machine/param.h>
+#include <machine/sysarch.h>
 
 #include <vm/vm.h>
 #include <vm/pmap.h>
@@ -52,6 +53,14 @@ enum {
     ATOMIC64_SUBTRACT,
     ATOMIC64_STORE,
     ATOMIC64_SWAP
+};
+
+struct atomic64_sysarch_args {
+	u_int64_t	*p;
+	u_int64_t	v;
+	u_int64_t	arg2;
+	int		type;
+	u_int64_t	rval;
 };
 
 #ifdef _KERNEL
@@ -147,4 +156,122 @@ atomic64_mtxinit(void *x __unused)
 SYSINIT(atomic64_mtxinit, SI_SUB_LOCK, SI_ORDER_MIDDLE, atomic64_mtxinit, NULL);
 #endif	/* SMP */
 
+struct mtx atomic64_user_mtx;
+MTX_SYSINIT(atomic64_user, &atomic64_user_mtx, "atomic64 user mutex", MTX_DEF);
+int
+sysarch_atomic64(void *args)
+{
+	struct atomic64_sysarch_args a64_args;
+	u_int64_t p;
+	int err;
+
+	err = copyin(args, &a64_args, sizeof(a64_args));
+	if (err < 0)
+	    return (err);
+
+	mtx_lock(&atomic64_user_mtx);
+	err = copyin(a64_args.p, &p, sizeof(p));
+	if (err < 0) {
+		mtx_unlock(&atomic64_user_mtx);
+		goto err;
+	}
+	switch (a64_args.type) {
+	case ATOMIC64_ADD:
+		atomic_add_64(&p, a64_args.v);
+		break;
+	case ATOMIC64_CLEAR:
+		atomic_clear_64(&p, a64_args.v);
+		break;
+	case ATOMIC64_CMPSET:
+		a64_args.rval =
+		    atomic_cmpset_64(&p, a64_args.v, a64_args.arg2);
+		break;
+	case ATOMIC64_FCMPSET:
+		/* XXX arg2 is a pointer */
+		a64_args.rval =
+		    atomic_fcmpset_64(&p, &a64_args.v, a64_args.arg2);
+		break;
+	case ATOMIC64_FETCHADD:
+		atomic_fetchadd_64(&p, a64_args.v);
+		break;
+	case ATOMIC64_LOAD:
+		a64_args.rval = p;
+		break;
+	case ATOMIC64_SET:
+		atomic_set_64(&p, a64_args.v);
+		break;
+	case ATOMIC64_SUBTRACT:
+		atomic_subtract_64(&p, a64_args.v);
+		break;
+	case ATOMIC64_STORE:
+		copyout(&a64_args.v, a64_args.p, sizeof(a64_args.p));
+		break;
+	case ATOMIC64_SWAP:
+		a64_args.rval = p;
+		copyout(&a64_args.v, a64_args.p, sizeof(a64_args.p));
+		break;
+	};
+
+	mtx_unlock(&atomic64_user_mtx);
+
+	err = copyout(&a64_args, args, sizeof(a64_args));
+err:
+	return (err);
+}
+
+#else	/* !_KERNEL */
+
+#define ATOMIC64_EMU_BIN_V(op, op_enum) \
+    void \
+    atomic_##op##_64(volatile u_int64_t *p, u_int64_t v) {	\
+    	struct atomic64_sysarch_args args;			\
+	args.p = __DEVOLATILE(u_int64_t *, p);			\
+	args.v = v;						\
+	args.type = ATOMIC64_##op_enum;				\
+	sysarch(ATOMIC64_SYSARCH, &args);			\
+	return; } struct hack
+
+#define ATOMIC64_EMU_BIN(op, rtype, op_enum) \
+    rtype \
+    atomic_##op##_64(volatile u_int64_t *p, u_int64_t v) {	\
+    	struct atomic64_sysarch_args args;			\
+	args.p = __DEVOLATILE(u_int64_t *, p);			\
+	args.v = v;						\
+	args.type = ATOMIC64_##op_enum;				\
+	sysarch(ATOMIC64_SYSARCH, &args);			\
+	return args.rval; } struct hack
+
+ATOMIC64_EMU_BIN_V(add, ADD);
+ATOMIC64_EMU_BIN_V(clear, CLEAR);
+ATOMIC64_EMU_BIN_V(set, SET);
+ATOMIC64_EMU_BIN_V(subtract, SUBTRACT);
+ATOMIC64_EMU_BIN_V(store, STORE);
+
+ATOMIC64_EMU_BIN(fetchadd, u_int64_t, FETCHADD);
+ATOMIC64_EMU_BIN(swap, u_int64_t, SWAP);
+
+int
+atomic_cmpset_64(volatile u_int64_t *dst, u_int64_t old, u_int64_t new)
+{
+    	struct atomic64_sysarch_args args;
+
+	args.p = __DEVOLATILE(u_int64_t *, dst);
+	args.v = old;
+	args.type = ATOMIC64_FCMPSET;
+	sysarch(ATOMIC64_SYSARCH, &args);
+	return args.rval;
+}
+
+int
+atomic_fcmpset_64(volatile u_int64_t *dst, u_int64_t *old, u_int64_t new)
+{
+    	struct atomic64_sysarch_args args;
+
+	args.p = __DEVOLATILE(u_int64_t *, dst);
+	args.v = *old;
+	args.type = ATOMIC64_FCMPSET;
+	sysarch(ATOMIC64_SYSARCH, &args);
+	*old = args.v;
+	return args.rval;
+}
 #endif	/* _KERNEL */
