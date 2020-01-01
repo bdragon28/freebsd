@@ -154,6 +154,14 @@ mftb(void)
 	return (tb);
 }
 
+static __inline uint32_t
+mftbl(void)
+{
+	uint32_t tb;
+	tb = (uint32_t)mfspr(TBR_TBL);
+	return (tb);
+}
+
 static __inline void
 mttb(u_quad_t time)
 {

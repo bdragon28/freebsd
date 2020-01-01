@@ -768,7 +768,7 @@ moea64_insert_to_pteg_native(struct lpte *pvo_pt, uintptr_t slotbase,
 	int i, j;
 
 	/* Start at a random slot */
-	i = mftb() % 8;
+	i = mftbl() % 8;
 	for (j = 0; j < 8; j++) {
 		k = slotbase + (i + j) % 8;
 		pt = &moea64_pteg_table[k];

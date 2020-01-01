@@ -451,7 +451,7 @@ slb_insert_kernel(uint64_t slbe, uint64_t slbv)
 			slbcache[USER_SLB_SLOT].slbe = 1;
 	}
 
-	i = mftb() % n_slbs;
+	i = mftbl() % n_slbs;
 	if (i == USER_SLB_SLOT)
 			i = (i+1) % n_slbs;
 
@@ -482,7 +482,7 @@ slb_insert_user(pmap_t pm, struct slb *slb)
 		i = pm->pm_slb_len;
 		pm->pm_slb_len++;
 	} else {
-		i = mftb() % n_slbs;
+		i = mftbl() % n_slbs;
 	}
 
 	/* Note that this replacement is atomic with respect to trap_subr */
@@ -582,7 +582,7 @@ handle_kernel_slb_spill(int type, register_t dar, register_t srr0)
 	}
 
 	/* Sacrifice a random SLB entry that is not the user entry */
-	i = mftb() % n_slbs;
+	i = mftbl() % n_slbs;
 	if (i == USER_SLB_SLOT)
 		i = (i+1) % n_slbs;
 
