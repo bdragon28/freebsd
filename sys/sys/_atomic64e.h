@@ -36,7 +36,6 @@
 
 #ifdef _KERNEL
 #define	HAS_EMULATED_ATOMIC64
-#endif
 
 /* Emulated versions of 64-bit atomic operations. */
 
@@ -76,7 +75,5 @@ void	atomic_store_64(volatile u_int64_t *, u_int64_t);
 
 u_int64_t atomic_swap_64(volatile u_int64_t *, u_int64_t);
 
-#ifdef _KERNEL
-int	sysarch_atomic64(void *);
-#endif
+#endif /* _KERNEL */
 #endif /* _SYS_ATOMIC64E_H_ */

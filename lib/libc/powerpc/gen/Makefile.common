@@ -4,13 +4,3 @@
 
 SRCS += _ctx_start.S eabi.S infinity.c ldexp.c makecontext.c \
 	signalcontext.c syncicache.c _set_tp.c trivial-getcontextx.c
-
-SRCS+=	subr_atomic64.c
-
-# Copy kern/subr_atomic64.c to the libc object directory.
-subr_atomic64.c: ${SRCTOP}/sys/kern/subr_atomic64.c
-	cat ${.ALLSRC} > ${.TARGET}
-
-CLEANFILES+= subr_atomic64.c
-
-SYM_MAPS+=${LIBC_SRCTOP}/gen/Symbol-atomic64e.map

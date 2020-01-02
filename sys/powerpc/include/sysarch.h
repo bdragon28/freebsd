@@ -42,6 +42,4 @@ int	sysarch(int, void *);
 __END_DECLS
 #endif
 
-#define	ATOMIC64_SYSARCH	-1
-
 #endif /* !_MACHINE_SYSARCH_H_ */

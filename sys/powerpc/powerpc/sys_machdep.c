@@ -32,7 +32,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/systm.h>
 #include <sys/errno.h>
 #include <sys/sysproto.h>
-#include <machine/sysarch.h>
 
 #ifdef COMPAT_FREEBSD32
 #include <compat/freebsd32/freebsd32_proto.h>
@@ -40,11 +39,6 @@ __FBSDID("$FreeBSD$");
 int
 freebsd32_sysarch(struct thread *td, struct freebsd32_sysarch_args *uap)
 {
-
-	switch (uap->op) {
-	case ATOMIC64_SYSARCH:
-		return (sysarch_atomic64(uap->parms));
-	}
 
 	return (EINVAL);
 }
@@ -54,11 +48,5 @@ int
 sysarch(struct thread *td, struct sysarch_args *uap)
 {
 
-#ifndef __powerpc64__
-	switch (uap->op) {
-	case ATOMIC64_SYSARCH:
-		return (sysarch_atomic64(uap->parms));
-	}
-#endif
 	return (EINVAL);
 }
