@@ -649,7 +649,7 @@ tlbia(void)
 {
 	vm_offset_t i;
 	#ifndef __powerpc64__
-	register_t msr, scratch;
+	register_t msr, scratch, intr;
 	#endif
 
 	i = 0xc00; /* IS = 11 */
@@ -672,6 +672,7 @@ tlbia(void)
 		#ifdef __powerpc64__
 		__asm __volatile("tlbiel %0" :: "r"(i));
 		#else
+		intr = intr_disable();
 		__asm __volatile("\
 		    mfmsr %0; \
 		    mr %1, %0; \
@@ -684,6 +685,7 @@ tlbia(void)
 		    mtmsrd %0; \
 		    isync;" 
 		: "=r"(msr), "=r"(scratch) : "r"(i), "r"(1));
+		intr_restore(intr);
 		#endif
 	}
 

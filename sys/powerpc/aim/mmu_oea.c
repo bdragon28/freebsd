@@ -311,7 +311,7 @@ void moea_zero_page(vm_page_t);
 void moea_zero_page_area(vm_page_t, int, int);
 void moea_activate(struct thread *);
 void moea_deactivate(struct thread *);
-void moea_cpu_bootstrap(int);
+static void moea_cpu_bootstrap(int);
 void moea_bootstrap(vm_offset_t, vm_offset_t);
 void *moea_mapdev(vm_paddr_t, vm_size_t);
 void *moea_mapdev_attr(vm_paddr_t, vm_size_t, vm_memattr_t);
@@ -654,7 +654,7 @@ om_cmp(const void *a, const void *b)
 		return (0);
 }
 
-void
+static void
 moea_cpu_bootstrap(int ap)
 {
 	u_int sdr;
