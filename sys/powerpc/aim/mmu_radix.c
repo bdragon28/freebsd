@@ -550,7 +550,7 @@ pa_cmp(const void *a, const void *b)
 static void
 pmap_epoch_init(void *arg __unused)
 {
-	pmap_epoch = epoch_alloc(EPOCH_PREEMPT | EPOCH_LOCKED);
+	pmap_epoch = epoch_alloc("Radix pmap", EPOCH_PREEMPT | EPOCH_LOCKED);
 }
 SYSINIT(epoch, SI_SUB_TASKQ + 1, SI_ORDER_ANY, pmap_epoch_init, NULL);
 

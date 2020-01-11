@@ -221,7 +221,7 @@ struct pmap {
 };
 
 struct pv_entry {
-	pmap_t 		pv_pmap;	/* XXX */
+	/* pmap_t 		pv_pmap;*/	/* XXX */
 	vm_offset_t	pv_va;		/* virtual address for mapping */
 	TAILQ_ENTRY(pv_entry)	pv_next;
 };
