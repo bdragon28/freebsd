@@ -843,7 +843,7 @@ panic(const char *fmt, ...)
 	vpanic(fmt, ap);
 }
 
-#ifndef __powerpc64__
+#if !defined(__powerpc64__) && !defined(__SPE__)
 extern void bdragon_dump_bridge(void);
 #endif
 
@@ -900,7 +900,7 @@ vpanic(const char *fmt, va_list ap)
 		printf("\n");
 	}
 
-#ifndef __powerpc64__
+#if !defined(__powerpc64__) && !defined(__SPE__)
 bdragon_dump_bridge();
 #endif
 
