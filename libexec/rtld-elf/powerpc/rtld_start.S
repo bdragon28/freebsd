@@ -109,10 +109,10 @@ _END(.rtld_start)
 #define	GPRWIDTH	8
 #define	FUDGE		4	/* Fudge factor for alignment */
 #else
-/* stack space for 30 GPRs + lr/cr */
-#define	NREGS		30
+/* stack space for 30 GPRs + lr/cr + r11 scratch */
+#define	NREGS		31
 #define	GPRWIDTH	4
-#define	FUDGE		4
+#define	FUDGE		0
 #endif
 /* Stack frame needs the 12-byte ABI frame plus fudge factor. */
 #define	STACK_SIZE	(NREGS * GPRWIDTH + 4 * 2 + 12 + FUDGE)
@@ -129,8 +129,10 @@ _ENTRY(_rtld_bind_secureplt_start)
 	stwu    %r1,-STACK_SIZE(%r1)
 #ifdef __SPE__
 	evstdd	%r0,24(%r1)
+	evstdd	%r11, 96(%r1)
 #else
 	stw     %r0,20(%r1)		# save r0
+	stw	%r11, 140(%r1)		# backup of r11
 #endif
 
 	/*
@@ -161,8 +163,10 @@ _ENTRY(_rtld_bind_start)
 	stwu    %r1,-STACK_SIZE(%r1)
 #ifdef __SPE__
 	evstdd	%r0,24(%r1)
+	evstdd	%r11, 96(%r1)
 #else
 	stw     %r0,20(%r1)		# save r0
+	stw	%r11, 140(%r1)		# backup of r11
 #endif
 1:
 	mflr    %r0
@@ -178,7 +182,7 @@ _ENTRY(_rtld_bind_start)
 	evstdd	%r8, 72(%r1)
 	evstdd	%r9, 80(%r1)
 	evstdd	%r10, 88(%r1)
-	evstdd	%r11, 96(%r1)
+	/* r11 was saved above. */
 	evstdd	%r12, 104(%r1)
 	evstdd	%r13, 112(%r1)
 	evstdd	%r14, 120(%r1)
@@ -253,6 +257,7 @@ _ENTRY(_rtld_bind_start)
 	evlddx	%r31, %r1, %r0
 #else
         lmw     %r3,24(%r1)		# restore r3-r31
+	lwz	%r11, 140(%r1)		# restore original r11
 #endif
         lwz     %r0,12(%r1)		# restore cr
         mtcr    %r0
