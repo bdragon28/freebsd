@@ -901,7 +901,7 @@ vpanic(const char *fmt, va_list ap)
 	}
 
 #if !defined(__powerpc64__) && !defined(__SPE__)
-bdragon_dump_bridge();
+//bdragon_dump_bridge();
 #endif
 
 #ifdef SMP
