@@ -144,6 +144,7 @@
 
 /* DTrace trap opcode. */
 #define EXC_DTRACE	0x7ffff808
+#define	EXC_FALLTHRU	0x7fdef008
 
 /* Magic pointer to store TOC base and other info for trap handlers on ppc64 */
 #define	TRAP_ENTRY	0x1e8

@@ -352,6 +352,7 @@ CNAME(trapcode):
 	mtlr	%r1
 	li	%r1, 0xe0		/* How to get the vector from LR */
 	blrl				/* LR & (0xff00 | r1) is exception # */
+	.long	EXC_FALLTHRU		/* Panic if we end up back here. */
 CNAME(trapcodeend):
 
 /*
@@ -927,5 +928,6 @@ CNAME(dblow):
 	addi	%r1, %r1, (dbtrap - generictrap)
 	mtlr	%r1
 	blrl
+	.long	EXC_FALLTHRU		/* We should NOT be here. */
 CNAME(dbend):
 #endif /* KDB */

@@ -1004,6 +1004,8 @@ db_trap_glue(struct trapframe *frame)
 		/* Ignore DTrace traps. */
 		if (*(uint32_t *)frame->srr0 == EXC_DTRACE)
 			return (0);
+		if (*(uint32_t *)frame->srr0 == EXC_FALLTHRU)
+			panic("Dropped out of trap!");
 		if (frame_is_trap_inst(frame)) {
 			type = T_BREAKPOINT;
 		}
