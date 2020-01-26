@@ -408,6 +408,8 @@ tcp_fastopen_init(void)
 	else
 		V_tcp_fastopen_ccache.buckets = V_tcp_fastopen_ccache_buckets;
 
+printf("tcp_fastopen_init buckets %d\n", V_tcp_fastopen_ccache.buckets);
+
 	V_tcp_fastopen_ccache.mask = V_tcp_fastopen_ccache.buckets - 1;
 	V_tcp_fastopen_ccache.secret = arc4random();
 
@@ -415,14 +417,19 @@ tcp_fastopen_init(void)
 	    sizeof(struct tcp_fastopen_ccache_bucket), M_TCP_FASTOPEN_CCACHE,
 	    M_WAITOK | M_ZERO);
 
+printf("tcp_fastopen_init cache base %p\n", V_tcp_fastopen_ccache.base);
+
 	for (i = 0; i < V_tcp_fastopen_ccache.buckets; i++) {
+printf("i=%d ", i);
 		TAILQ_INIT(&V_tcp_fastopen_ccache.base[i].ccb_entries);
 		mtx_init(&V_tcp_fastopen_ccache.base[i].ccb_mtx, "tfo_ccache_bucket",
 			 NULL, MTX_DEF);
 		if (V_tcp_fastopen_client_enable) {
+printf("enable\n");
 			/* enable bucket */
 			V_tcp_fastopen_ccache.base[i].ccb_num_entries = 0;
 		} else {
+printf("disable\n");
 			/* disable bucket */
 			V_tcp_fastopen_ccache.base[i].ccb_num_entries = -1;
 		}
