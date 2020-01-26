@@ -54,12 +54,8 @@ int	 ffs(int) __pure2;
 #if __BSD_VISIBLE
 int	 ffsl(long) __pure2;
 int	 ffsll(long long) __pure2;
-#ifndef HAVE_INLINE_FLS
 int	 fls(int) __pure2;
-#endif
-#ifndef HAVE_INLINE_FLSL
 int	 flsl(long) __pure2;
-#endif
 int	 flsll(long long) __pure2;
 #endif
 #if __BSD_VISIBLE || __POSIX_VISIBLE <= 200112
