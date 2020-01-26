@@ -649,9 +649,11 @@ CNAME(dsitrap):
 	mflr	%r28			/* save LR (SP already saved) */
 
 	/* Jump to disitrap */
+	mtsprg1	%r1
 	lwz	%r1, TRAP_GENTRAP(0)
 	addi	%r1, %r1, (disitrap - generictrap)
 	mtlr	%r1
+	mfsprg1	%r1
 	blrl
 CNAME(dsiend):
 
@@ -927,6 +929,7 @@ CNAME(dblow):
 	lwz	%r1, TRAP_GENTRAP(0)
 	addi	%r1, %r1, (dbtrap - generictrap)
 	mtlr	%r1
+	mfsprg1	%r1
 	blrl
 	.long	EXC_FALLTHRU		/* We should NOT be here. */
 CNAME(dbend):
