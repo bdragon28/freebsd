@@ -4331,7 +4331,7 @@ bdragon_dump_bridge()
         }
 
 	for (i = 0; i < 16; i++) {
-		__asm __volatile ("mfsrin %0,%1" : "=r"(sr) : "r"(i));
+		sr = mfsrin(i << ADDR_SR_SHFT);
 		printf("%02d: H:0x%x/S:0x%x ", i, sr, kernel_pmap->pm_sr[i]);
 	}
 }
