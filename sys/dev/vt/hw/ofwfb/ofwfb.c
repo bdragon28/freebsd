@@ -337,13 +337,23 @@ ofwfb_initialize(struct vt_device *vd)
 		 * endianness of the frame buffer.
 		 */
 		oldpix = bus_space_read_4(sc->sc_memt, sc->fb.fb_vbase, 0);
+#if BYTE_ORDER == LITTLE_ENDIAN
 		bus_space_write_4(sc->sc_memt, sc->fb.fb_vbase, 0, 0xff000000);
+#else
+		bus_space_write_4(sc->sc_memt, sc->fb.fb_vbase, 0, 0x000000ff);
+#endif
+		/* Ensure write has been committed. */
+		rmb();
+		/*
+		 * Read back first byte to see whether or not we need to
+		 * invert the palette.
+		 */
 		if (*(uint8_t *)(sc->fb.fb_vbase) == 0xff)
 			vt_generate_cons_palette(sc->fb.fb_cmap,
 			    COLOR_FORMAT_RGB, 255, 0, 255, 8, 255, 16);
 		else
 			vt_generate_cons_palette(sc->fb.fb_cmap,
-			    COLOR_FORMAT_RGB, 255, 16, 255, 8, 255, 0);
+			    COLOR_FORMAT_RGB, 255, 24, 255, 16, 255, 8);
 		bus_space_write_4(sc->sc_memt, sc->fb.fb_vbase, 0, oldpix);
 		break;
 
