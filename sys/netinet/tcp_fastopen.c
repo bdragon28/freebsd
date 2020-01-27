@@ -381,6 +381,8 @@ VNET_DEFINE_STATIC(struct tcp_fastopen_ccache, tcp_fastopen_ccache);
 #define	CCB_UNLOCK(ccb)		mtx_unlock(&(ccb)->ccb_mtx)
 #define	CCB_LOCK_ASSERT(ccb)	mtx_assert(&(ccb)->ccb_mtx, MA_OWNED)
 
+extern void bdragon_dump_bridge(void);
+
 void
 tcp_fastopen_init(void)
 {
@@ -422,10 +424,15 @@ printf("tcp_fastopen_init cache base %p\n", V_tcp_fastopen_ccache.base);
 	for (i = 0; i < V_tcp_fastopen_ccache.buckets; i++) {
 printf("i=%d ", i);
 		TAILQ_INIT(&V_tcp_fastopen_ccache.base[i].ccb_entries);
+/*
+if (i == 114) {
+bdragon_dump_bridge();
+}
+*/
 		mtx_init(&V_tcp_fastopen_ccache.base[i].ccb_mtx, "tfo_ccache_bucket",
 			 NULL, MTX_DEF);
 		if (V_tcp_fastopen_client_enable) {
-printf("enable\n");
+printf("e ");
 			/* enable bucket */
 			V_tcp_fastopen_ccache.base[i].ccb_num_entries = 0;
 		} else {

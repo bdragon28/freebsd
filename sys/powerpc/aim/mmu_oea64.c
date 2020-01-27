@@ -4315,18 +4315,25 @@ moea64_sp_clear(struct pvo_entry *pvo, vm_page_t m, uint64_t ptebit)
 
 #ifndef __powerpc64__
 
+void bdragon_dump_bridge(void);
+
 void
 bdragon_dump_bridge()
 {
-	register_t slbH, slbL; // actually 64-bit but the compiler doesn't know that.
 	register_t i;
+	uint32_t sr;
 	uint32_t slbvH, slbvL, slbeH, slbeL;
-        for (i = 0; i < n_slbs; i++) {
-                __asm __volatile ("slbmfev %0,%2; mr %1,%0; sldi %0,32" : "=r"(slbvH), "=r"(slbvL) : "r"(i));
-                __asm __volatile ("slbmfee %0,%1" : "=r"(slbe) : "r"(i));
-                db_printf("%02d: HW V:0x%x/E:0x%x\n",
-                    i, slbv, slbe);
+	/* 64 = PPC970E */
+        for (i = 0; i < 16; i++) {
+                __asm __volatile ("slbmfev %0,%2; mr %1,%0; sldi %0,%0,32" : "=r"(slbvH), "=r"(slbvL) : "r"(i));
+                __asm __volatile ("slbmfee %0,%2; mr %1,%0; sldi %0,%0,32" : "=r"(slbeH), "=r"(slbeL) : "r"(i));
+		printf("%02d: VH:0x%x VL:0x%x EH:0x%x EL:0x%x\n", i, slbvH, slbvL, slbeH, slbeL);
         }
+
+	for (i = 0; i < 16; i++) {
+		__asm __volatile ("mfsrin %0,%1" : "=r"(sr) : "r"(i));
+		printf("%02d: H:0x%x/S:0x%x ", i, sr, kernel_pmap->pm_sr[i]);
+	}
 }
 #endif
 
@@ -4342,7 +4349,7 @@ DB_SHOW_COMMAND(bridgesrs, moea64_show_bridgesrs)
 	register_t i;
 
 	db_printf("SLB (low word):\n");
-	for (i = 0; i < n_slbs; i++) {
+	for (i = 0; i < 32; i++) {
 		__asm __volatile ("slbmfev %0,%1" : "=r"(slbv) : "r"(i));
 		__asm __volatile ("slbmfee %0,%1" : "=r"(slbe) : "r"(i));
 		db_printf("%02d: HW V:0x%x/E:0x%x\n",

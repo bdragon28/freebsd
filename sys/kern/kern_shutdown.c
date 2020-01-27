@@ -843,6 +843,10 @@ panic(const char *fmt, ...)
 	vpanic(fmt, ap);
 }
 
+#ifndef __powerpc64__
+extern void bdragon_dump_bridge(void);
+#endif
+
 void
 vpanic(const char *fmt, va_list ap)
 {
@@ -895,6 +899,11 @@ vpanic(const char *fmt, va_list ap)
 		vprintf(fmt, ap);
 		printf("\n");
 	}
+
+#ifndef __powerpc64__
+bdragon_dump_bridge();
+#endif
+
 #ifdef SMP
 	printf("cpuid = %d\n", PCPU_GET(cpuid));
 #endif
