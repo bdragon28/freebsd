@@ -47,6 +47,7 @@ __FBSDID("$FreeBSD$");
 static int
 ofw_mapmem(vm_offset_t dest, const size_t len)
 {
+
         void    *destp, *addr;
         size_t  dlen;
         size_t  resid;
@@ -64,13 +65,14 @@ ofw_mapmem(vm_offset_t dest, const size_t len)
             (dest + len) <= (last_dest + last_len)) {
                 return (0);
 	}
-
+printf(" need to grow for 0x%jx@0x%jx last 0x%jx@0x%jx ", (uintmax_t)len, (uintmax_t)dest, (uintmax_t)last_len, (uintmax_t)last_dest);
 	/*
 	 * Trim area covered by existing mapping, if any
 	 */
 	if (dest < (last_dest + last_len) && dest >= last_dest) {
 		nlen -= (last_dest + last_len) - dest;
 		dest = last_dest + last_len;
+printf(" adj 0x%jx / 0x%jx ", (uintmax_t)nlen, (uintmax_t)dest);
 	}
 
         destp = (void *)(dest & ~PAGE_MASK);
@@ -83,8 +85,9 @@ ofw_mapmem(vm_offset_t dest, const size_t len)
 	if ((nlen + resid) < PAGE_SIZE*MAPMEM_PAGE_INC) {
 		dlen = PAGE_SIZE*MAPMEM_PAGE_INC;
 	} else
-		dlen = roundup(nlen + resid, PAGE_SIZE);
+		dlen = roundup(nlen + resid, PAGE_SIZE*MAPMEM_PAGE_INC);
 
+printf("ofw_mapmem: about to claim\n");
         if (OF_call_method("claim", memory, 3, 1, destp, dlen, 0, &addr)
             == -1) {
                 printf("ofw_mapmem: physical claim failed\n");
@@ -109,6 +112,7 @@ ofw_mapmem(vm_offset_t dest, const size_t len)
 	}
         last_dest = (vm_offset_t) destp;
         last_len  = dlen;
+	printf("ofw_mapmem last 0x%jx@0x%jx\n", (uintmax_t)last_len, (uintmax_t)last_dest);
 
         return (0);
 }
@@ -121,14 +125,18 @@ ofw_copyin(const void *src, vm_offset_t dest, const size_t len)
                 return (0);
         }
 
+//  printf("%jx ", (uintmax_t)dest);
         bcopy(src, (void *)dest, len);
+//  printf("K ");
         return(len);
 }
 
 ssize_t
 ofw_copyout(const vm_offset_t src, void *dest, const size_t len)
 {
+//printf("ofw_copyout 0x%jx -> 0x%jx@0x%jx\n", (uintmax_t)src, (uintmax_t)len, (uintmax_t)dest);
 	bcopy((void *)src, dest, len);
+//printf("ofw_copyout success\n");
 	return(len);
 }
 

@@ -397,6 +397,9 @@ __elfN(loadfile_raw)(char *filename, uint64_t dest,
 	else
 		dest = roundup(dest, PAGE_SIZE);
 
+
+printf("Dest address was 0x%jx\n", (uintmax_t)dest);
+
 	/*
 	 * Ok, we think we should handle this.
 	 */
@@ -489,6 +492,8 @@ __elfN(loadimage)(struct preloaded_file *fp, elf_file_t ef, uint64_t off)
 	u_int		fpcopy;
 	Elf_Sym		sym;
 	Elf_Addr	p_start, p_end;
+
+printf("loadimage() with offset 0x%jx\n", (uintmax_t)off);
 
 	dp = NULL;
 	shdr = NULL;
@@ -870,7 +875,9 @@ nosyms:
 	if (ef->hashtab == NULL || ef->symtab == NULL ||
 	    ef->strtab == NULL || ef->strsz == 0)
 		goto out;
+printf("a ");
 	COPYOUT(ef->hashtab, &ef->nbuckets, sizeof(ef->nbuckets));
+printf("b ");
 	COPYOUT(ef->hashtab + 1, &ef->nchains, sizeof(ef->nchains));
 	ef->buckets = ef->hashtab + 2;
 	ef->chains = ef->buckets + ef->nbuckets;
@@ -890,10 +897,12 @@ nosyms:
 	if (__elfN(lookup_symbol)(ef, "__start_set_modmetadata_set", &sym,
 	    STT_NOTYPE) != 0)
 		return 0;
+printf(" __start_set_modmetadata_set = 0x%jx\n", (uintmax_t)sym.st_value);
 	p_start = sym.st_value + ef->off;
 	if (__elfN(lookup_symbol)(ef, "__stop_set_modmetadata_set", &sym,
 	    STT_NOTYPE) != 0)
 		return ENOENT;
+printf(" __stop_set_modmetadata_set = 0x%jx\n", (uintmax_t)sym.st_value);
 	p_end = sym.st_value + ef->off;
 
 	if (__elfN(parse_modmetadata)(fp, ef, p_start, p_end) == 0)
@@ -1136,13 +1145,18 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 	modcnt = 0;
 	p = p_start;
 	while (p < p_end) {
+printf("c ");
 		COPYOUT(p, &v, sizeof(v));
+printf("p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
+
 		error = __elfN(reloc_ptr)(fp, ef, p, &v, sizeof(v));
 		if (error == EOPNOTSUPP)
 			v += ef->off;
 		else if (error != 0)
 			return (error);
+printf("point2 p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
 #if (defined(__i386__) || defined(__powerpc__)) && __ELF_WORD_SIZE == 64
+printf("d ");
 		COPYOUT(v, &md64, sizeof(md64));
 		error = __elfN(reloc_ptr)(fp, ef, v, &md64, sizeof(md64));
 		if (error == EOPNOTSUPP) {
@@ -1155,6 +1169,7 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 		md.md_cval = (const char *)(uintptr_t)md64.md_cval;
 		md.md_data = (void *)(uintptr_t)md64.md_data;
 #elif defined(__amd64__) && __ELF_WORD_SIZE == 32
+printf("e ");
 		COPYOUT(v, &md32, sizeof(md32));
 		error = __elfN(reloc_ptr)(fp, ef, v, &md32, sizeof(md32));
 		if (error == EOPNOTSUPP) {
@@ -1167,6 +1182,7 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 		md.md_cval = (const char *)(uintptr_t)md32.md_cval;
 		md.md_data = (void *)(uintptr_t)md32.md_data;
 #else
+printf("f ");
 		COPYOUT(v, &md, sizeof(md));
 		error = __elfN(reloc_ptr)(fp, ef, v, &md, sizeof(md));
 		if (error == EOPNOTSUPP) {
@@ -1186,6 +1202,7 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 			mdepend = malloc(minfolen);
 			if (mdepend == NULL)
 				return ENOMEM;
+printf("g ");
 			COPYOUT((vm_offset_t)md.md_data, mdepend,
 			    sizeof(*mdepend));
 			strcpy((char*)(mdepend + 1), s);
@@ -1196,6 +1213,7 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 			break;
 		case MDT_VERSION:
 			s = strdupout((vm_offset_t)md.md_cval);
+printf("h ");
 			COPYOUT((vm_offset_t)md.md_data, &mver, sizeof(mver));
 			file_addmodule(fp, s, mver.mv_version, NULL);
 			free(s);
@@ -1239,6 +1257,7 @@ __elfN(lookup_symbol)(elf_file_t ef, const char* name, Elf_Sym *symp,
 	unsigned long hash;
 
 	hash = elf_hash(name);
+printf("i ");
 	COPYOUT(&ef->buckets[hash % ef->nbuckets], &symnum, sizeof(symnum));
 
 	while (symnum != STN_UNDEF) {
@@ -1247,6 +1266,7 @@ __elfN(lookup_symbol)(elf_file_t ef, const char* name, Elf_Sym *symp,
 			return ENOENT;
 		}
 
+printf("j ");
 		COPYOUT(ef->symtab + symnum, &sym, sizeof(sym));
 		if (sym.st_name == 0) {
 			printf(__elfN(bad_symtable));
@@ -1265,6 +1285,7 @@ __elfN(lookup_symbol)(elf_file_t ef, const char* name, Elf_Sym *symp,
 			return ENOENT;
 		}
 		free(strp);
+printf("k ");
 		COPYOUT(&ef->chains[symnum], &symnum, sizeof(symnum));
 	}
 	return ENOENT;
@@ -1290,10 +1311,12 @@ __elfN(reloc_ptr)(struct preloaded_file *mp, elf_file_t ef,
 	 * The kernel is already relocated, but we still want to apply
 	 * offset adjustments.
 	 */
+// XXX RELOCATABLE_KERNEL
 	if (ef->kernel)
 		return (EOPNOTSUPP);
 
 	for (n = 0; n < ef->relsz / sizeof(r); n++) {
+printf("l ");
 		COPYOUT(ef->rel + n, &r, sizeof(r));
 
 		error = __elfN(reloc)(ef, __elfN(symaddr), &r, ELF_RELOC_REL,
@@ -1302,6 +1325,7 @@ __elfN(reloc_ptr)(struct preloaded_file *mp, elf_file_t ef,
 			return (error);
 	}
 	for (n = 0; n < ef->relasz / sizeof(a); n++) {
+//printf("m ");
 		COPYOUT(ef->rela + n, &a, sizeof(a));
 
 		error = __elfN(reloc)(ef, __elfN(symaddr), &a, ELF_RELOC_RELA,
