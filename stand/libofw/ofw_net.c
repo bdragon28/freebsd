@@ -71,8 +71,6 @@ struct netif_driver ofwnet = {
 	nitems(ofwn_ifs)		/* netif_nifs */
 };
 
-static ihandle_t	netinstance;
-
 static void		*dmabuf;
 
 static int
@@ -115,7 +113,7 @@ ofwn_put(struct iodesc *desc, void *pkt, size_t len)
 		pkt = dmabuf;
 	}
 
-	rv = OF_write(netinstance, pkt, len);
+	rv = OF_write((ihandle_t)desc->io_netif->nif_devdata, pkt, len);
 
 #if defined(NETIF_DEBUG)
 	printf("netif_put: OF_write returned %d\n", rv);
@@ -149,7 +147,7 @@ ofwn_get(struct iodesc *desc, void **pkt, time_t timeout)
 
 	t = getsecs();
 	do {
-		length = OF_read(netinstance, ptr, len);
+		length = OF_read((ihandle_t)desc->io_netif->nif_devdata, ptr, len);
 	} while ((length == -2 || length == 0) &&
 		(getsecs() - t < timeout));
 
@@ -208,17 +206,19 @@ ofwn_init(struct iodesc *desc, void *machdep_hint)
 
 	printf("boot: ethernet address: %s\n", ether_sprintf(desc->myea));
 
-	if ((netinstance = OF_open(path)) == -1) {
+	if ((desc->io_netif->nif_devdata = (void*)OF_open(path)) == (void*)-1) {
 		printf("Could not open network device.\n");
 		goto punt;
 	}
 
 #if defined(NETIF_DEBUG)
-	printf("ofwn_init: Open Firmware instance handle: %08x\n", netinstance);
+	printf("ofwn_init: Open Firmware instance handle: %08x\n",
+	    (ihandle_t)desc->io_netif->nif_devdata);
 #endif
 	dmabuf = NULL;
-	if (OF_call_method("dma-alloc", netinstance, 1, 1, (64 * 1024), &dmabuf)
-	    < 0) {
+	if (OF_call_method("dma-alloc",
+	    (ihandle_t)desc->io_netif->nif_devdata, 1, 1, (64 * 1024),
+	    &dmabuf) < 0) {
 		printf("Failed to allocate DMA buffer (got %p).\n", dmabuf);
 		goto punt;
 	}
@@ -237,11 +237,14 @@ punt:
 static void
 ofwn_end(struct netif *nif)
 {
-#ifdef BROKEN
+
+//#ifdef BROKEN
 	/* dma-free freezes at least some Apple ethernet controllers */
-	OF_call_method("dma-free", netinstance, 2, 0, dmabuf, MAXPHYS);
-#endif
-	OF_close(netinstance);
+	OF_call_method("dma-free", (ihandle_t)nif->nif_devdata, 2, 0,
+	    dmabuf, MAXPHYS);
+//#endif
+//	OF_close((ihandle_t)nif->nif_devdata);
+	nif->nif_devdata = NULL;
 }
 
 #if 0

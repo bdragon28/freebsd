@@ -1,5 +1,7 @@
 # $FreeBSD$
 
+DO32=1
+
 LOADER_CD9660_SUPPORT?=	yes
 LOADER_EXT2FS_SUPPORT?=	no
 LOADER_MSDOS_SUPPORT?=	no
@@ -47,10 +49,10 @@ CFLAGS+=	-DRELOC=${RELOC} -g
 LDFLAGS=	-nostdlib -static -T ${.CURDIR}/ldscript.powerpc
 
 # Open Firmware standalone support library
-LIBOFW=		${BOOTOBJ}/libofw/libofw.a
+LIBOFW32=	${BOOTOBJ}/libofw32/libofw.a
 CFLAGS+=	-I${BOOTSRC}/libofw
 
-DPADD=		${LDR_INTERP} ${LIBOFW} ${LIBFDT} ${LIBSA}
-LDADD=		${LDR_INTERP} ${LIBOFW} ${LIBFDT} ${LIBSA}
+DPADD=		${LDR_INTERP32} ${LIBOFW32} ${LIBFDT32} ${LIBSA32}
+LDADD=		${LDR_INTERP32} ${LIBOFW32} ${LIBFDT32} ${LIBSA32}
 
 .include <bsd.prog.mk>

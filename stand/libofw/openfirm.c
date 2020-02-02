@@ -526,6 +526,7 @@ OF_close(ihandle_t instance)
 	} args = {
 		(cell_t)"close",
 		1,
+		0,
 	};
 
 	args.instance = instance;

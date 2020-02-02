@@ -33,8 +33,13 @@ __FBSDID("$FreeBSD$");
 #include <sys/linker.h>
 #include <i386/include/bootinfo.h>
 #include <machine/cpufunc.h>
+#include <machine/metadata.h>
 #include <machine/psl.h>
+#if defined(__powerpc__)
+
+#else
 #include <machine/specialreg.h>
+#endif
 
 #include "bootstrap.h"
 #include "libuserboot.h"
