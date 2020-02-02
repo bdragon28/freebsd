@@ -249,8 +249,28 @@ dos_open(const char *path, struct open_file *fd)
     }
 
     if ((err = namede(fs, path, &de))) {
-        dos_unmount(fs);
-        return (err);
+        /*
+         * Second chance:
+         *
+         * On systems where we have to resort to using msdosfs, we often
+         * are mounting it to /boot in the final filesystem. To make loader
+         * more robust in this situation, whenever a file is not found, try
+         * again with the "/boot" stripped off.
+         *
+         * While this is a blatant layering violation, doing it here means
+         * we don't have to force everything in loader to check both /boot
+         * and / in all requests.
+         *
+         * If an error still occurs, return the original err.
+         */
+        if ((strstr(path, "/boot") != path) || namede(fs, &path[5], &de)) {
+            dos_unmount(fs);
+            return (err);
+        }
+        else {
+            /* File was found at alternate path, proceed normally. */
+            err = 0;
+        }
     }
 
     clus = stclus(fs->fatsz, de);
