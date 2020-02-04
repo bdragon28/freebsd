@@ -3549,7 +3549,7 @@ ATF_TC_BODY(ptrace__PT_STEP_with_signal, tc)
 	wpid = waitpid(fpid, &status, 0);
 	ATF_REQUIRE(wpid == fpid);
 	ATF_REQUIRE(WIFSTOPPED(status));
-	ATF_REQUIRE(WSTOPSIG(status) == SIGABRT);
+	ATF_REQUIRE_MSG(WSTOPSIG(status) == SIGABRT, "Status was %d", WSTOPSIG(status));
 
 	ATF_REQUIRE(ptrace(PT_LWPINFO, wpid, (caddr_t)&pl, sizeof(pl)) != -1);
 	ATF_REQUIRE(pl.pl_flags & PL_FLAG_SI);

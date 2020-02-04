@@ -109,9 +109,12 @@
 void
 cpu_fork(struct thread *td1, struct proc *p2, struct thread *td2, int flags)
 {
+	struct	proc *p1;
 	struct	trapframe *tf;
 	struct	callframe *cf;
 	struct	pcb *pcb;
+
+	p1 = td1->td_proc;
 
 	KASSERT(td1 == curthread || td1 == &thread0,
 	    ("cpu_fork: p1 not curproc and not proc0"));
@@ -140,6 +143,12 @@ cpu_fork(struct thread *td1, struct proc *p2, struct thread *td2, int flags)
 	tf->fixreg[FIRSTARG] = 0;
 	tf->fixreg[FIRSTARG + 1] = 0;
 	tf->cr &= ~0x10000000;
+
+	/*
+	 * Something something parent process
+	 */
+	if ((p1->p_pfsflags & PF_FORK) == 0)
+		tf->srr1 &= ~PSL_SE;
 
 	td2->td_frame = tf;
 
