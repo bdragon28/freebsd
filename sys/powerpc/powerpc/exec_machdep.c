@@ -405,6 +405,11 @@ grab_mcontext(struct thread *td, mcontext_t *mcp, int flags)
 			KASSERT(td == curthread,
 				("get_mcontext: fp save not curthread"));
 			critical_enter();
+			/*
+			 * Calling save_fpu() will populate the pcb with the
+			 * current values of the FPRs or, if VSX is on, the
+			 * first 32 VSRs (Which is a superset of the FPRs.)
+			 */
 			save_fpu(td);
 			critical_exit();
 		}
@@ -416,6 +421,7 @@ grab_mcontext(struct thread *td, mcontext_t *mcp, int flags)
 	}
 
 	if (pcb->pcb_flags & PCB_VSX) {
+		mcp->mc_flags |= _MC_VSX_VALID;
 		for (i = 0; i < 32; i++)
 			memcpy(&mcp->mc_vsxfpreg[i],
 			    &pcb->pcb_fpu.fpr[i].vsr[2], sizeof(double));
@@ -429,6 +435,7 @@ grab_mcontext(struct thread *td, mcontext_t *mcp, int flags)
 		KASSERT(td == curthread,
 			("get_mcontext: fp save not curthread"));
 		critical_enter();
+		/* Copy VSR 32-63 (aka VR 0-31) to PCB */
 		save_vec(td);
 		critical_exit();
 		mcp->mc_flags |= _MC_AV_VALID;

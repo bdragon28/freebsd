@@ -164,21 +164,17 @@ save_tar:
 	std	%r6, PCB_DSCR(%r17)
 
 .L0:
-	/* Save FPU context if needed */
+	/* Save FPU and/or VSX context if needed */
 	andi.	%r7, %r18, PCB_FPU
-	beq	.L1
-	bl	save_fpu
+	bnel	save_fpu
 	nop
 
-.L1:
 	mr	%r3,%r14		/* restore old thread ptr */
 	/* Save Altivec context if needed */
 	andi.	%r7, %r18, PCB_VEC
-	beq	.L2
-	bl	save_vec
+	bnel	save_vec
 	nop
-	
-.L2:
+
 	mr	%r3,%r14		/* restore old thread ptr */
 	bl	pmap_deactivate	/* Deactivate the current pmap */
 	nop
