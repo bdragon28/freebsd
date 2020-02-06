@@ -118,6 +118,7 @@ ASSYM(PC_SLBSTACK, offsetof(struct pcpu, pc_aim.slbstack));
 ASSYM(USER_SLB_SLOT, USER_SLB_SLOT);
 ASSYM(USER_SLB_SLBE, USER_SLB_SLBE);
 ASSYM(SEGMENT_MASK, SEGMENT_MASK);
+ASSYM(SLB_DEBUG, offsetof(struct pcpu, pc_aim.slbdebug));
 #else
 ASSYM(PM_SR, offsetof(struct pmap, pm_sr));
 ASSYM(USER_SR, USER_SR);

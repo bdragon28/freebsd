@@ -959,6 +959,48 @@ dbleave:
 	rfid
 ASEND(breakpoint)
 
+
+	.globl	CNAME(mchk_dblow)
+	.p2align 3
+CNAME(mchk_dblow):
+/*
+ * When we get a MCE, we need to dump some additional info while we have
+ * a chance.
+ */
+	mtsprg1 %r1			/* save SP */
+	mtsprg2	%r28			/* save r28 */
+	mfcr	%r28			/* save CR in r28 */
+
+	/*
+	 * For MCE debug, we don't care what mode we're in yet.
+	 * We will dump out the SLB either way.
+	 */
+        GET_CPUINFO(%r1)
+        std     %r29,(PC_DBSAVE+CPUSAVE_R29)(%r1)       /* free r29 */
+        std     %r30,(PC_DBSAVE+CPUSAVE_R30)(%r1)       /* free r30 */
+        std     %r31,(PC_DBSAVE+CPUSAVE_R31)(%r1)       /* free r31 */
+
+	li	%r29, 0		/* set counter to zero */
+	mr	%r30, %r1
+	addi	%r30, %r30, SLB_DEBUG /* set r30 to slb_debug[0] */
+1:
+	/* Read the SLB into the slb_debug array. */
+	slbmfee	%r31, %r29
+	std	%r31, 0(%r30)
+	slbmfev %r31, %r29
+	std	%r31, 8(%r30)
+	addi	%r30, %r30, 16
+	cmpdi	%r29, 32 /* 64 on PPC970? */
+	beq-	1b
+
+	/* Put things back like they were and fall through to dblow. */
+	ld	%r31, (PC_DBSAVE+CPUSAVE_R31)(%r1)
+	ld	%r30, (PC_DBSAVE+CPUSAVE_R30)(%r1)
+	ld	%r29, (PC_DBSAVE+CPUSAVE_R29)(%r1)
+	mtcr	%r28
+	mfsprg2	%r28
+	mfsprg1	%r1
+
 /*
  * In case of KDB we want a separate trap catcher for it
  */

@@ -66,11 +66,12 @@ struct pvo_entry;
 	struct slb	slb[64];					\
 	struct slb	**userslb;					\
 	register_t	slbsave[18];					\
-	uint8_t		slbstack[1024];				\
+	uint8_t		slbstack[1024];					\
 	struct pvo_entry *qmap_pvo;					\
 	struct mtx	qmap_lock;					\
 	uint64_t	opal_hmi_flags;					\
-	char		__pad[1337];
+	struct slb	slbdebug[64];					\
+	char		__pad[313];
 
 #ifdef __powerpc64__
 #define PCPU_MD_AIM_FIELDS	PCPU_MD_AIM64_FIELDS
