@@ -416,6 +416,7 @@ grab_mcontext(struct thread *td, mcontext_t *mcp, int flags)
 	}
 
 	if (pcb->pcb_flags & PCB_VSX) {
+		mcp->mc_flags |= _MC_VSX_VALID;
 		for (i = 0; i < 32; i++)
 			memcpy(&mcp->mc_vsxfpreg[i],
 			    &pcb->pcb_fpu.fpr[i].vsr[2], sizeof(double));
@@ -499,6 +500,27 @@ set_mcontext(struct thread *td, mcontext_t *mcp)
 	else
 		tf->fixreg[2] = tls;
 
+#if 0
+	if (mcp->mc_flags & _MC_VSX_VALID) {
+		/*
+		 * If we are using VSX, we are also unconditionally using
+		 * FP and VEC. We do not support emulating FPU and running VSX
+		 * at the same time, so we can just turn everything on.
+		 */
+		if ((mcp->mc_flags & (_MC_FP_VALID | _MC_AV_VALID)) !=
+		    (_MC_FP_VALID | _MC_AV_VALID))
+			return (EINVAL); 
+
+		/* XXX do we need to do a feature flags check for VSX here? */ 
+
+		if ((pcb->pcb_flags & PCB_FPU) != PCB_FPU) {
+			critical_enter();
+			enable_fpu(td);
+			critical_exit();
+		}
+		
+#endif
+
 	/*
 	 * Force the FPU back off to ensure the new context will not bypass
 	 * the enable_fpu() setup code accidentally.
@@ -514,7 +536,12 @@ set_mcontext(struct thread *td, mcontext_t *mcp)
 	pcb->pcb_flags &= ~(PCB_FPU | PCB_VSX);
 
 	if (mcp->mc_flags & _MC_FP_VALID) {
-		/* enable_fpu() will happen lazily on a fault */
+		/*
+		 * enable_fpu() will happen lazily on a fault.
+		 *
+		 * We leave it off here because we need it to remain off when
+		 * we are using the floating point emulator.
+		 */
 		pcb->pcb_flags |= PCB_FPREGS;
 		memcpy(&pcb->pcb_fpu.fpscr, &mcp->mc_fpscr, sizeof(double));
 		bzero(pcb->pcb_fpu.fpr, sizeof(pcb->pcb_fpu.fpr));

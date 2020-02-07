@@ -307,11 +307,29 @@ trap(struct trapframe *frame)
 		case EXC_VSX:
 			KASSERT((td->td_pcb->pcb_flags & PCB_VSX) != PCB_VSX,
 			    ("VSX already enabled for thread"));
+			/*
+			 * If the vector registers are not enabled already,
+			 * do it now.
+			 *
+			 * This will initialize VSR32-63 and VSCR to 0.
+			 */ 
 			if (!(td->td_pcb->pcb_flags & PCB_VEC))
 				enable_vec(td);
+			/*
+			 * If we are upgrading from FP to VSX, we need to
+			 * snapshot the current regs so they don't get
+			 * overwritten with outdated data when we copy them
+			 * back to VSR0-31.
+			 */
 			if (td->td_pcb->pcb_flags & PCB_FPU)
 				save_fpu(td);
 			td->td_pcb->pcb_flags |= PCB_VSX;
+			/*
+			 * Now that the pcb has been set up properly, call
+			 * enable_fpu again so it writes out the full-width
+			 * VSR0-31. (32-63 were done already by enable_vec
+			 * above.)
+			 */
 			enable_fpu(td);
 			break;
 
