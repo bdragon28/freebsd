@@ -158,7 +158,9 @@ enum sysinit_sub_id {
 	SI_SUB_KPROF		= 0x9000000,	/* kernel profiling*/
 	SI_SUB_KICK_SCHEDULER	= 0xa000000,	/* start the timeout events*/
 	SI_SUB_INT_CONFIG_HOOKS	= 0xa800000,	/* Interrupts enabled config */
+#ifndef EARLY_AP_STARTUP
 	SI_SUB_SMP		= 0xa900000,	/* TEMP START APS */
+#endif
 	SI_SUB_ROOT_CONF	= 0xb000000,	/* Find root devices */
 	SI_SUB_INTRINSIC_POST	= 0xd000000,	/* proc 0 cleanup*/
 	SI_SUB_SYSCALLS		= 0xd800000,	/* register system calls */

@@ -109,8 +109,10 @@ machdep_ap_bootstrap(void)
 	while(smp_started == 0)
 		;
 
+#ifndef EARLY_AP_STARTUP
 	/* Start per-CPU event timers. */
 	cpu_initclocks_ap();
+#endif
 
 	/* Announce ourselves awake, and enter the scheduler */
 	sched_throw(NULL);
