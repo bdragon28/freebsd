@@ -228,6 +228,9 @@ bool __read_frequently panicked;
 
 int __read_mostly dumping;		/* system is dumping */
 int rebooting;				/* system is rebooting */
+
+static int __panic_token = 0;		/* atomic panic helper */
+
 /*
  * Used to serialize between sysctl kern.shutdown.dumpdevname and list
  * modifications via ioctl.
@@ -857,6 +860,19 @@ vpanic(const char *fmt, va_list ap)
 	int bootopt, newpanic;
 	static char buf[256];
 
+	/*
+	 * Grab the panic token.
+	 *
+	 * If we are panicing in parallel with another thread, whoever
+	 * grabs the token will very shortly IPI us.
+	 *
+	 * Since stop_cpus_hard() may be masked inside critical sections
+	 * on some platforms, we are purposely spinning here outside the
+	 * spinlock.
+	 */
+	while (!atomic_cmpset_int(&__panic_token, 0, 1))
+		__compiler_membar();
+
 	spinlock_enter();
 
 #ifdef SMP
@@ -899,6 +915,14 @@ vpanic(const char *fmt, va_list ap)
 		vprintf(fmt, ap);
 		printf("\n");
 	}
+	mb();	/* panicstr */
+	/*
+	 * Now that the panic has been dumped, release the token.
+	 * Any other threads that were trying to panic will have been
+	 * stopped by the IPI earlier, but we might need to reenter if we
+	 * panic again inside the debugger.
+	 */
+	atomic_store_int(&__panic_token, 0);
 
 #if !defined(__powerpc64__) && !defined(__SPE__)
 //bdragon_dump_bridge();
