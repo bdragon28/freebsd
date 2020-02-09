@@ -365,6 +365,8 @@ DB_SHOW_COMMAND(thread, db_show_thread)
 	db_printf(" stack: %p-%p\n", (void *)td->td_kstack,
 	    (void *)(td->td_kstack + td->td_kstack_pages * PAGE_SIZE - 1));
 	db_printf(" flags: %#x ", td->td_flags);
+	if (td->td_pinned)
+		db_printf(" pinned: %d ", td->td_pinned);
 	db_printf(" pflags: %#x\n", td->td_pflags);
 	db_printf(" state: ");
 	switch (td->td_state) {
