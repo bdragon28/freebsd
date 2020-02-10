@@ -35,6 +35,27 @@
 #define	MAX_PICS		32
 #define	MAP_IRQ(node, pin)	powerpc_get_irq(node, pin)
 
+#ifdef	INTRNG
+#define POWERPC_NIRQ    2048	/* XXX */
+
+#ifndef NIRQ
+#define NIRQ            POWERPC_NIRQ
+#endif
+
+#include <sys/intr.h>
+
+/*
+ * Common IRQ source structure for all PowerPC controllers.
+ */
+struct powerpc_irqsrc {
+        struct intr_irqsrc      isrc;
+        /* IRQ from the interrupt controller's perspective */
+        u_int                   irq;
+        /* Private data needed by xive */
+        void                    *priv;
+};
+#endif
+
 /*
  * Default base address for MSI messages on PowerPC
  */
