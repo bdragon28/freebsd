@@ -69,7 +69,7 @@ __FBSDID("$FreeBSD$");
 
 #include "ofw_bus_if.h"
 #include "pcib_if.h"
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #include <machine/resource.h>
 #include <machine/bus.h>
@@ -939,7 +939,7 @@ static device_method_t fsl_msi_methods[] = {
 	DEVMETHOD(device_probe,		fsl_msi_probe),
 	DEVMETHOD(device_attach,	fsl_msi_attach),
 
-	DEVMETHOD(pic_enable,		fsl_msi_enable),
+	DEVMETHOD(oldpic_enable,	fsl_msi_enable),
 	DEVMETHOD_END
 };
 

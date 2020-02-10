@@ -44,7 +44,7 @@
 #include <machine/platform.h>
 
 #include "ps3-hvcall.h"
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 static void	ps3pic_identify(driver_t *driver, device_t parent);
 static int	ps3pic_probe(device_t);
@@ -75,12 +75,12 @@ static device_method_t  ps3pic_methods[] = {
 	DEVMETHOD(device_attach,	ps3pic_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_dispatch,		ps3pic_dispatch),
-	DEVMETHOD(pic_enable,		ps3pic_enable),
-	DEVMETHOD(pic_eoi,		ps3pic_eoi),
-	DEVMETHOD(pic_ipi,		ps3pic_ipi),
-	DEVMETHOD(pic_mask,		ps3pic_mask),
-	DEVMETHOD(pic_unmask,		ps3pic_unmask),
+	DEVMETHOD(oldpic_dispatch,		ps3pic_dispatch),
+	DEVMETHOD(oldpic_enable,		ps3pic_enable),
+	DEVMETHOD(oldpic_eoi,			ps3pic_eoi),
+	DEVMETHOD(oldpic_ipi,			ps3pic_ipi),
+	DEVMETHOD(oldpic_mask,			ps3pic_mask),
+	DEVMETHOD(oldpic_unmask,		ps3pic_unmask),
 
 	{ 0, 0 },
 };

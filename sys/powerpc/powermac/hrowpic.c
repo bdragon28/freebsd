@@ -57,7 +57,7 @@
 
 #include <powerpc/powermac/hrowpicvar.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 /*
  * MacIO interface
@@ -78,12 +78,12 @@ static device_method_t  hrowpic_methods[] = {
 	DEVMETHOD(device_attach,        hrowpic_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_dispatch,		hrowpic_dispatch),
-	DEVMETHOD(pic_enable,		hrowpic_enable),
-	DEVMETHOD(pic_eoi,		hrowpic_eoi),
-	DEVMETHOD(pic_ipi,		hrowpic_ipi),
-	DEVMETHOD(pic_mask,		hrowpic_mask),
-	DEVMETHOD(pic_unmask,		hrowpic_unmask),
+	DEVMETHOD(oldpic_dispatch,		hrowpic_dispatch),
+	DEVMETHOD(oldpic_enable,		hrowpic_enable),
+	DEVMETHOD(oldpic_eoi,			hrowpic_eoi),
+	DEVMETHOD(oldpic_ipi,			hrowpic_ipi),
+	DEVMETHOD(oldpic_mask,			hrowpic_mask),
+	DEVMETHOD(oldpic_unmask,		hrowpic_unmask),
 
 	{ 0, 0 },
 };

@@ -57,7 +57,7 @@ __FBSDID("$FreeBSD$");
 #endif
 
 #include "phyp-hvcall.h"
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #define XICP_PRIORITY	5	/* Random non-zero number */
 #define XICP_IPI	2
@@ -87,13 +87,13 @@ static device_method_t  xicp_methods[] = {
 	DEVMETHOD(device_attach,	xicp_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_bind,		xicp_bind),
-	DEVMETHOD(pic_dispatch,		xicp_dispatch),
-	DEVMETHOD(pic_enable,		xicp_enable),
-	DEVMETHOD(pic_eoi,		xicp_eoi),
-	DEVMETHOD(pic_ipi,		xicp_ipi),
-	DEVMETHOD(pic_mask,		xicp_mask),
-	DEVMETHOD(pic_unmask,		xicp_unmask),
+	DEVMETHOD(oldpic_bind,			xicp_bind),
+	DEVMETHOD(oldpic_dispatch,		xicp_dispatch),
+	DEVMETHOD(oldpic_enable,		xicp_enable),
+	DEVMETHOD(oldpic_eoi,			xicp_eoi),
+	DEVMETHOD(oldpic_ipi,			xicp_ipi),
+	DEVMETHOD(oldpic_mask,			xicp_mask),
+	DEVMETHOD(oldpic_unmask,		xicp_unmask),
 
 	DEVMETHOD_END
 };

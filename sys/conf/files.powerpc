@@ -265,7 +265,7 @@ powerpc/powerpc/minidump_machdep.c	optional	powerpc64 | powerpc64le
 powerpc/powerpc/mp_machdep.c	optional	smp
 powerpc/powerpc/nexus.c		standard
 powerpc/powerpc/openpic.c	standard
-powerpc/powerpc/pic_if.m	standard
+powerpc/powerpc/oldpic_if.m	standard
 powerpc/powerpc/pmap_dispatch.c	standard
 powerpc/powerpc/platform.c	standard
 powerpc/powerpc/platform_if.m	standard

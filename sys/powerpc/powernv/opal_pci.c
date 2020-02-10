@@ -55,7 +55,7 @@ __FBSDID("$FreeBSD$");
 #include <vm/pmap.h>
 
 #include "pcib_if.h"
-#include "pic_if.h"
+#include "oldpic_if.h"
 #include "iommu_if.h"
 #include "opal.h"
 
@@ -146,8 +146,8 @@ static device_method_t	opalpci_methods[] = {
 	DEVMETHOD(pcib_route_interrupt,	opalpci_route_interrupt),
 
 	/* PIC interface for MSIs */
-	DEVMETHOD(pic_enable,		opalpic_pic_enable),
-	DEVMETHOD(pic_eoi,		opalpic_pic_eoi),
+	DEVMETHOD(oldpic_enable,	opalpic_pic_enable),
+	DEVMETHOD(oldpic_eoi,		opalpic_pic_eoi),
 
 	/* Bus interface */
 	DEVMETHOD(bus_get_dma_tag,	opalpci_get_dma_tag),
@@ -700,7 +700,7 @@ opalpic_pic_enable(device_t dev, u_int irq, u_int vector, void **priv)
 {
 	struct opalpci_softc *sc = device_get_softc(dev);
 
-	PIC_ENABLE(root_pic, irq, vector, priv);
+	OLDPIC_ENABLE(root_pic, irq, vector, priv);
 	opal_call(OPAL_PCI_MSI_EOI, sc->phb_id, irq, priv);
 }
 
@@ -711,7 +711,7 @@ static void opalpic_pic_eoi(device_t dev, u_int irq, void *priv)
 	sc = device_get_softc(dev);
 	opal_call(OPAL_PCI_MSI_EOI, sc->phb_id, irq);
 
-	PIC_EOI(root_pic, irq, priv);
+	OLDPIC_EOI(root_pic, irq, priv);
 }
 
 static bus_dma_tag_t

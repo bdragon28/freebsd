@@ -87,7 +87,7 @@
 #include <machine/smp.h>
 #include <machine/trap.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #define	MAX_STRAY_LOG	5
 
@@ -204,7 +204,7 @@ smp_intr_init(void *dummy __unused)
 	for (vector = 0; vector < nvectors; vector++) {
 		i = powerpc_intrs[vector];
 		if (i != NULL && i->event != NULL && i->pic == root_pic)
-			PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
+			OLDPIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 	}
 }
 SYSINIT(smp_intr_init, SI_SUB_SMP, SI_ORDER_ANY, smp_intr_init, NULL);
@@ -321,7 +321,7 @@ powerpc_intr_eoi(void *arg)
 {
 	struct powerpc_intr *i = arg;
 
-	PIC_EOI(i->pic, i->intline, i->priv);
+	OLDPIC_EOI(i->pic, i->intline, i->priv);
 }
 
 static void
@@ -329,8 +329,8 @@ powerpc_intr_pre_ithread(void *arg)
 {
 	struct powerpc_intr *i = arg;
 
-	PIC_MASK(i->pic, i->intline, i->priv);
-	PIC_EOI(i->pic, i->intline, i->priv);
+	OLDPIC_MASK(i->pic, i->intline, i->priv);
+	OLDPIC_EOI(i->pic, i->intline, i->priv);
 }
 
 static void
@@ -338,7 +338,7 @@ powerpc_intr_post_ithread(void *arg)
 {
 	struct powerpc_intr *i = arg;
 
-	PIC_UNMASK(i->pic, i->intline, i->priv);
+	OLDPIC_UNMASK(i->pic, i->intline, i->priv);
 }
 
 static int
@@ -353,7 +353,7 @@ powerpc_assign_intr_cpu(void *arg, int cpu)
 		CPU_SETOF(cpu, &i->pi_cpuset);
 
 	if (!cold && i->pic != NULL && i->pic == root_pic)
-		PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
+		OLDPIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 
 	return (0);
 #else
@@ -501,14 +501,14 @@ powerpc_enable_intr(void)
 			continue;
 
 		if (i->trig == INTR_TRIGGER_INVALID)
-			PIC_TRANSLATE_CODE(i->pic, i->intline, i->fwcode,
+			OLDPIC_TRANSLATE_CODE(i->pic, i->intline, i->fwcode,
 			    &i->trig, &i->pol);
 		if (i->trig != INTR_TRIGGER_CONFORM ||
 		    i->pol != INTR_POLARITY_CONFORM)
-			PIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
+			OLDPIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
 
 		if (i->event != NULL)
-			PIC_ENABLE(i->pic, i->intline, vector, &i->priv);
+			OLDPIC_ENABLE(i->pic, i->intline, vector, &i->priv);
 	}
 
 	return (0);
@@ -554,18 +554,18 @@ powerpc_setup_intr(const char *name, u_int irq, driver_filter_t filter,
 
 		if (!error) {
 			if (i->trig == INTR_TRIGGER_INVALID)
-				PIC_TRANSLATE_CODE(i->pic, i->intline,
+				OLDPIC_TRANSLATE_CODE(i->pic, i->intline,
 				    i->fwcode, &i->trig, &i->pol);
 
 			if (i->trig != INTR_TRIGGER_CONFORM ||
 			    i->pol != INTR_POLARITY_CONFORM)
-				PIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
+				OLDPIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
 
 			if (i->pic == root_pic)
-				PIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
+				OLDPIC_BIND(i->pic, i->intline, i->pi_cpuset, &i->priv);
 
 			if (enable)
-				PIC_ENABLE(i->pic, i->intline, i->vector,
+				OLDPIC_ENABLE(i->pic, i->intline, i->vector,
 				    &i->priv);
 		}
 	}
@@ -607,9 +607,9 @@ powerpc_fw_config_intr(int irq, int sense_code)
 	i->fwcode = sense_code;
 
 	if (!cold && i->pic != NULL) {
-		PIC_TRANSLATE_CODE(i->pic, i->intline, i->fwcode, &i->trig,
+		OLDPIC_TRANSLATE_CODE(i->pic, i->intline, i->fwcode, &i->trig,
 		    &i->pol);
-		PIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
+		OLDPIC_CONFIG(i->pic, i->intline, i->trig, i->pol);
 	}
 
 	return (0);
@@ -628,7 +628,7 @@ powerpc_config_intr(int irq, enum intr_trigger trig, enum intr_polarity pol)
 	i->pol = pol;
 
 	if (!cold && i->pic != NULL)
-		PIC_CONFIG(i->pic, i->intline, trig, pol);
+		OLDPIC_CONFIG(i->pic, i->intline, trig, pol);
 
 	return (0);
 }
@@ -653,7 +653,7 @@ powerpc_dispatch_intr(u_int vector, struct trapframe *tf)
 	 * This prevents races in IPI handling.
 	 */
 	if (i->ipi)
-		PIC_EOI(i->pic, i->intline, i->priv);
+		OLDPIC_EOI(i->pic, i->intline, i->priv);
 
 	if (intr_event_handle(ie, tf) != 0) {
 		goto stray;
@@ -670,7 +670,7 @@ stray:
 		}
 	}
 	if (i != NULL)
-		PIC_MASK(i->pic, i->intline, i->priv);
+		OLDPIC_MASK(i->pic, i->intline, i->priv);
 }
 
 void
@@ -682,7 +682,7 @@ powerpc_intr_mask(u_int irq)
 	if (i == NULL || i->pic == NULL)
 		return;
 
-	PIC_MASK(i->pic, i->intline, i->priv);
+	OLDPIC_MASK(i->pic, i->intline, i->priv);
 }
 
 void
@@ -694,5 +694,5 @@ powerpc_intr_unmask(u_int irq)
 	if (i == NULL || i->pic == NULL)
 		return;
 
-	PIC_UNMASK(i->pic, i->intline, i->priv);
+	OLDPIC_UNMASK(i->pic, i->intline, i->priv);
 }

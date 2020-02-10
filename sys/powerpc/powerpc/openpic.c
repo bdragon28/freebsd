@@ -50,7 +50,7 @@
 #include <machine/openpicreg.h>
 #include <machine/openpicvar.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #define	OPENPIC_NIPIS		4
 

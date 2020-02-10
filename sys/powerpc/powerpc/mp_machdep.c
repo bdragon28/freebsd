@@ -60,7 +60,7 @@ __FBSDID("$FreeBSD$");
 #include <machine/setjmp.h>
 #include <machine/smp.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 volatile static int ap_awake;
 volatile static u_int ap_letgo;
@@ -358,7 +358,7 @@ ipi_send(struct pcpu *pc, int ipi)
 
 	atomic_set_32(&pc->pc_ipimask, (1 << ipi));
 	powerpc_sync();
-	PIC_IPI(root_pic, pc->pc_cpuid);
+	OLDPIC_IPI(root_pic, pc->pc_cpuid);
 
 	CTR1(KTR_SMP, "%s: sent", __func__);
 }

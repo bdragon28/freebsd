@@ -47,7 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <isa/isareg.h>
 #include <isa/isavar.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #define	ATPIC_MASTER	0
 #define	ATPIC_SLAVE	1
@@ -91,15 +91,15 @@ static device_method_t atpic_isa_methods[] = {
 	DEVMETHOD(device_attach,	atpic_isa_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_config,		atpic_config),
-	DEVMETHOD(pic_dispatch,		atpic_dispatch),
-	DEVMETHOD(pic_enable,		atpic_enable),
-	DEVMETHOD(pic_eoi,		atpic_eoi),
-	DEVMETHOD(pic_ipi,		atpic_ipi),
-	DEVMETHOD(pic_mask,		atpic_mask),
-	DEVMETHOD(pic_unmask,		atpic_unmask),
+	DEVMETHOD(oldpic_config,		atpic_config),
+	DEVMETHOD(oldpic_dispatch,		atpic_dispatch),
+	DEVMETHOD(oldpic_enable,		atpic_enable),
+	DEVMETHOD(oldpic_eoi,			atpic_eoi),
+	DEVMETHOD(oldpic_ipi,			atpic_ipi),
+	DEVMETHOD(oldpic_mask,			atpic_mask),
+	DEVMETHOD(oldpic_unmask,		atpic_unmask),
 
-	DEVMETHOD(pic_translate_code,	atpic_ofw_translate_code),
+	DEVMETHOD(oldpic_translate_code,	atpic_ofw_translate_code),
 
 	{ 0, 0 },
 };

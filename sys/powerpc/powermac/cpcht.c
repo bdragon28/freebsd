@@ -62,7 +62,7 @@ __FBSDID("$FreeBSD$");
 
 #include "pcib_if.h"
 #include <dev/pci/pcib_private.h>
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 /*
  * IBM CPC9X5 Hypertransport Device interface.
@@ -525,14 +525,14 @@ static device_method_t  openpic_cpcht_methods[] = {
 	DEVMETHOD(device_attach,	openpic_cpcht_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_bind,		openpic_bind),
-	DEVMETHOD(pic_config,		openpic_cpcht_config),
-	DEVMETHOD(pic_dispatch,		openpic_dispatch),
-	DEVMETHOD(pic_enable,		openpic_cpcht_enable),
-	DEVMETHOD(pic_eoi,		openpic_cpcht_eoi),
-	DEVMETHOD(pic_ipi,		openpic_ipi),
-	DEVMETHOD(pic_mask,		openpic_mask),
-	DEVMETHOD(pic_unmask,		openpic_cpcht_unmask),
+	DEVMETHOD(oldpic_bind,			openpic_bind),
+	DEVMETHOD(oldpic_config,		openpic_cpcht_config),
+	DEVMETHOD(oldpic_dispatch,		openpic_dispatch),
+	DEVMETHOD(oldpic_enable,		openpic_cpcht_enable),
+	DEVMETHOD(oldpic_eoi,			openpic_cpcht_eoi),
+	DEVMETHOD(oldpic_ipi,			openpic_ipi),
+	DEVMETHOD(oldpic_mask,			openpic_mask),
+	DEVMETHOD(oldpic_unmask,		openpic_cpcht_unmask),
 
 	{ 0, 0 },
 };

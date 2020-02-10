@@ -59,7 +59,7 @@ __FBSDID("$FreeBSD$");
 #include <machine/openpicvar.h>
 #include <powerpc/psim/iobusvar.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 /*
  * PSIM IOBus interface
@@ -73,13 +73,13 @@ static device_method_t  openpic_iobus_methods[] = {
 	DEVMETHOD(device_attach,	openpic_iobus_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_config,		openpic_config),
-	DEVMETHOD(pic_dispatch,		openpic_dispatch),
-	DEVMETHOD(pic_enable,		openpic_enable),
-	DEVMETHOD(pic_eoi,		openpic_eoi),
-	DEVMETHOD(pic_ipi,		openpic_ipi),
-	DEVMETHOD(pic_mask,		openpic_mask),
-	DEVMETHOD(pic_unmask,		openpic_unmask),
+	DEVMETHOD(oldpic_config,		openpic_config),
+	DEVMETHOD(oldpic_dispatch,		openpic_dispatch),
+	DEVMETHOD(oldpic_enable,		openpic_enable),
+	DEVMETHOD(oldpic_eoi,		openpic_eoi),
+	DEVMETHOD(oldpic_ipi,		openpic_ipi),
+	DEVMETHOD(oldpic_mask,		openpic_mask),
+	DEVMETHOD(oldpic_unmask,		openpic_unmask),
 	{ 0, 0 }
 };
 

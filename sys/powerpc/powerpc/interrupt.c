@@ -67,7 +67,7 @@
 #include <machine/spr.h>
 #include <machine/sr.h>
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #ifdef POWERNV
 int (*hmi_handler)(struct trapframe *);
@@ -93,7 +93,7 @@ powerpc_interrupt(struct trapframe *framep)
 	case EXC_EXI:
 	case EXC_HVI:
 		critical_enter();
-		PIC_DISPATCH(root_pic, framep);
+		OLDPIC_DISPATCH(root_pic, framep);
 		critical_exit();
 #ifdef BOOKE
 		framep->srr1 &= ~PSL_WE;

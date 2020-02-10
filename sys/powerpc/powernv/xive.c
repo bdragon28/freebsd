@@ -56,7 +56,7 @@ __FBSDID("$FreeBSD$");
 #include <powerpc/powernv/opal.h>
 #endif
 
-#include "pic_if.h"
+#include "oldpic_if.h"
 
 #define XIVE_PRIORITY	7	/* Random non-zero number */
 #define MAX_XIVE_IRQS	(1<<24)	/* 24-bit XIRR field */
@@ -129,14 +129,14 @@ static device_method_t  xive_methods[] = {
 	DEVMETHOD(device_attach,	xive_attach),
 
 	/* PIC interface */
-	DEVMETHOD(pic_bind,		xive_bind),
-	DEVMETHOD(pic_dispatch,		xive_dispatch),
-	DEVMETHOD(pic_enable,		xive_enable),
-	DEVMETHOD(pic_eoi,		xive_eoi),
-	DEVMETHOD(pic_ipi,		xive_ipi),
-	DEVMETHOD(pic_mask,		xive_mask),
-	DEVMETHOD(pic_unmask,		xive_unmask),
-	DEVMETHOD(pic_translate_code,	xive_translate_code),
+	DEVMETHOD(oldpic_bind,			xive_bind),
+	DEVMETHOD(oldpic_dispatch,		xive_dispatch),
+	DEVMETHOD(oldpic_enable,		xive_enable),
+	DEVMETHOD(oldpic_eoi,			xive_eoi),
+	DEVMETHOD(oldpic_ipi,			xive_ipi),
+	DEVMETHOD(oldpic_mask,			xive_mask),
+	DEVMETHOD(oldpic_unmask,		xive_unmask),
+	DEVMETHOD(oldpic_translate_code,	xive_translate_code),
 
 	DEVMETHOD_END
 };
