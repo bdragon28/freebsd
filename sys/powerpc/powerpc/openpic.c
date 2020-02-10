@@ -39,7 +39,7 @@
 #include <sys/smp.h>
 
 #include <machine/bus.h>
-#include <machine/intr_machdep.h>
+#include <machine/intr.h>
 #include <machine/md_var.h>
 #include <machine/pio.h>
 #include <machine/resource.h>

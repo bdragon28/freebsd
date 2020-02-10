@@ -53,7 +53,7 @@ __FBSDID("$FreeBSD$");
 
 #include <machine/bus.h>
 #include <machine/cpu.h>
-#include <machine/intr_machdep.h>
+#include <machine/intr.h>
 #include <machine/pcb.h>
 #include <machine/platform.h>
 #include <machine/md_var.h>

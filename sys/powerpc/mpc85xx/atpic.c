@@ -37,7 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/rman.h>
 
 #include <machine/bus.h>
-#include <machine/intr_machdep.h>
+#include <machine/intr.h>
 #include <machine/pio.h>
 
 #include <powerpc/mpc85xx/mpc85xx.h>

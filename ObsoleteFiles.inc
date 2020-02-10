@@ -8460,8 +8460,9 @@ OLD_DIRS+=usr/include/clang/2.0
 # 20100706: removed pc-sysinstall's detect-vmware.sh
 OLD_FILES+=usr/share/pc-sysinstall/backend-query/detect-vmware.sh
 # 20100701: [powerpc] removed <machine/intr.h>
+# 20200209: [powerpc] readded <machine/intr.h> and removed <machine/intr_machdep.h>
 .if ${TARGET_ARCH} == "powerpc"
-OLD_FILES+=usr/include/machine/intr.h
+OLD_FILES+=usr/include/machine/intr_machdep.h
 .endif
 # 20100514: library version bump for versioned symbols for liblzma
 OLD_LIBS+=usr/lib/liblzma.so.0

@@ -27,8 +27,8 @@
  * $FreeBSD$
  */
 
-#ifndef	_MACHINE_INTR_MACHDEP_H_
-#define	_MACHINE_INTR_MACHDEP_H_
+#ifndef	_MACHINE_INTR_H_
+#define	_MACHINE_INTR_H_
 
 #define	INTR_VECTORS	256
 
@@ -63,4 +63,4 @@ int	powerpc_fw_config_intr(int irq, int sense_code);
 void	powerpc_intr_mask(u_int irq);
 void	powerpc_intr_unmask(u_int irq);
 
-#endif /* _MACHINE_INTR_MACHDEP_H_ */
+#endif /* _MACHINE_INTR_H_ */

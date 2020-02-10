@@ -46,7 +46,7 @@ __FBSDID("$FreeBSD$");
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcib_private.h>
 
-#include <machine/intr_machdep.h>
+#include <machine/intr.h>
 
 #include "pcib_if.h"
 

@@ -82,7 +82,7 @@
 #include <sys/proc.h>
 
 #include <machine/frame.h>
-#include <machine/intr_machdep.h>
+#include <machine/intr.h>
 #include <machine/md_var.h>
 #include <machine/smp.h>
 #include <machine/trap.h>

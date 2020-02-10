@@ -61,8 +61,10 @@ __FBSDID("$FreeBSD$");
 #include <machine/resource.h>
 #include <machine/stdarg.h>
 
-#if defined(__i386__) || defined(__amd64__) || defined(__powerpc__)
+#if defined(__i386__) || defined(__amd64__)
 #include <machine/intr_machdep.h>
+#elif defined(__powerpc__)
+#include <machine/intr.h>
 #endif
 
 #include <sys/pciio.h>
