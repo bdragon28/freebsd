@@ -157,7 +157,9 @@ extern void	*alitrap, *aliend;
 extern void	*dsitrap, *dsiend;
 extern void	*decrint, *decrsize;
 extern void     *extint, *extsize;
+#ifdef __powerpc64__
 extern void	*mchk_dblow;
+#endif
 extern void	*dblow, *dbend;
 extern void	*imisstrap, *imisssize;
 extern void	*dlmisstrap, *dlmisssize;
@@ -428,8 +430,13 @@ aim_cpu_init(vm_offset_t toc)
 	    (size_t)&rstcode);
 
 #ifdef KDB
+#ifdef __powerpc64__
 	bcopy(&mchk_dblow, (void *)(EXC_MCHK + trap_offset), (size_t)&dbend -
 	    (size_t)&mchk_dblow);
+#else
+	bcopy(&dblow, (void *)(EXC_MCHK + trap_offset), (size_t)&dbend -
+	    (size_t)&dblow);
+#endif
 	bcopy(&dblow, (void *)(EXC_PGM + trap_offset), (size_t)&dbend -
 	    (size_t)&dblow);
 	bcopy(&dblow, (void *)(EXC_TRC + trap_offset), (size_t)&dbend -
