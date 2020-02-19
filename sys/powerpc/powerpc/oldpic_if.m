@@ -44,13 +44,19 @@ CODE {
 	}
 };
 
-METHOD void bind {
+/**
+ * INTRNG equivilent: pic_bind_intr
+ */
+METHOD int bind {
 	device_t	dev;
 	u_int		irq;
 	cpuset_t	cpumask;
 	void		**priv;
 };
 
+/**
+ * INTRNG equivilent: none (trigger/polarity is stored in interrupt parent)
+ */
 METHOD void translate_code {
 	device_t	dev;
 	u_int		irq;
@@ -59,18 +65,28 @@ METHOD void translate_code {
 	enum intr_polarity *pol;
 } DEFAULT oldpic_translate_code_default;
 
-METHOD void config {
+/**
+ * INTRNG equivilent: bus_config_intr
+ */
+METHOD int config {
 	device_t	dev;
 	u_int		irq;
 	enum intr_trigger trig;
 	enum intr_polarity pol;
 };
 
+/**
+ * INTRNG equivilent: Convert to isrc->isrc_filter and/or isrc->isrc_event.
+ * Should be int.
+ */
 METHOD void dispatch {
 	device_t	dev;
 	struct trapframe *tf;
 };
 
+/**
+ * INTRNG equivilent: pic_activate_intr (?)
+ */
 METHOD void enable {
 	device_t	dev;
 	u_int		irq;
@@ -78,23 +94,35 @@ METHOD void enable {
 	void		**priv;
 };
 
+/**
+ * INTRNG equivilent: pic_post_ithread (probably)
+ */
 METHOD void eoi {
 	device_t	dev;
 	u_int		irq;
 	void		*priv;
 };
 
+/**
+ * INTRNG equivilent: pic_ipi_send (which can send to a whole cpuset!)
+ */
 METHOD void ipi {
 	device_t	dev;
 	u_int		cpu;
 };
 
+/**
+ * INTRNG equivilent: pic_disable_intr
+ */
 METHOD void mask {
 	device_t	dev;
 	u_int		irq;
 	void		*priv;
 };
 
+/**
+ * INTRNG equivilent: pic_enable_intr
+ */
 METHOD void unmask {
 	device_t	dev;
 	u_int		irq;

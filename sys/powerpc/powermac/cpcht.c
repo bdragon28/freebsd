@@ -512,7 +512,7 @@ cpcht_map_msi(device_t dev, device_t child, int irq, uint64_t *addr,
 
 static int	openpic_cpcht_probe(device_t);
 static int	openpic_cpcht_attach(device_t);
-static void	openpic_cpcht_config(device_t, u_int irq,
+static int	openpic_cpcht_config(device_t, u_int irq,
 		    enum intr_trigger trig, enum intr_polarity pol);
 static void	openpic_cpcht_enable(device_t, u_int irq, u_int vector,
 		    void **priv);
@@ -607,7 +607,7 @@ openpic_cpcht_attach(device_t dev)
 	return (0);
 }
 
-static void
+static int
 openpic_cpcht_config(device_t dev, u_int irq, enum intr_trigger trig,
     enum intr_polarity pol)
 {
@@ -649,6 +649,7 @@ openpic_cpcht_config(device_t dev, u_int irq, enum intr_trigger trig,
 
 		mtx_unlock_spin(&sc->sc_ht_mtx);
 	}
+	return (0);
 }
 
 static void

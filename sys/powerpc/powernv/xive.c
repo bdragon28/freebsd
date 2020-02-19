@@ -113,7 +113,7 @@ static int	xive_attach(device_t);
 static int	xics_probe(device_t);
 static int	xics_attach(device_t);
 
-static void	xive_bind(device_t, u_int, cpuset_t, void **);
+static int	xive_bind(device_t, u_int, cpuset_t, void **);
 static void	xive_dispatch(device_t, struct trapframe *);
 static void	xive_enable(device_t, u_int, u_int, void **);
 static void	xive_eoi(device_t, u_int, void *);
@@ -441,7 +441,7 @@ xics_attach(device_t dev)
  * PIC I/F methods.
  */
 
-static void
+static int
 xive_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv)
 {
 	struct xive_irq *irqd;
@@ -481,6 +481,7 @@ xive_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv)
 		panic("Cannot bind interrupt %d to CPU %d", irq, cpu);
 
 	xive_eoi(dev, irq, irqd);
+	return (0);
 }
 
 /* Read the next entry in the queue page and update the index. */

@@ -68,7 +68,7 @@ static int	xicp_attach(device_t);
 static int	xics_probe(device_t);
 static int	xics_attach(device_t);
 
-static void	xicp_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv);
+static int	xicp_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv);
 static void	xicp_dispatch(device_t, struct trapframe *);
 static void	xicp_enable(device_t, u_int, u_int, void **priv);
 static void	xicp_eoi(device_t, u_int, void *priv);
@@ -318,7 +318,7 @@ xicp_setup_priv(struct xicp_softc *sc, u_int irq, void **priv)
  * PIC I/F methods.
  */
 
-static void
+static int
 xicp_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv)
 {
 	struct xicp_softc *sc = device_get_softc(dev);
@@ -328,7 +328,7 @@ xicp_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv)
 
 	/* Ignore IPIs */
 	if (irq == MAX_XICP_IRQS)
-		return;
+		return (1);
 
 	iv = xicp_setup_priv(sc, irq, priv);
 
@@ -363,6 +363,7 @@ xicp_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv)
 
 	if (error < 0)
 		panic("Cannot bind interrupt %d to CPU %d", irq, cpu);
+	return (0);
 }
 
 static void

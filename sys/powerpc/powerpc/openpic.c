@@ -229,7 +229,7 @@ openpic_common_attach(device_t dev, uint32_t node)
  * PIC I/F methods
  */
 
-void
+int
 openpic_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv __unused)
 {
 	struct openpic_softc *sc;
@@ -237,7 +237,7 @@ openpic_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv __unused)
 
 	/* If we aren't directly connected to the CPU, this won't work */
 	if (dev != root_pic)
-		return;
+		return (1);
 
 	sc = device_get_softc(dev);
 
@@ -262,9 +262,10 @@ openpic_bind(device_t dev, u_int irq, cpuset_t cpumask, void **priv __unused)
 	}
 
 	openpic_write(sc, OPENPIC_IDEST(irq), mask);
+	return (0);
 }
 
-void
+int
 openpic_config(device_t dev, u_int irq, enum intr_trigger trig,
     enum intr_polarity pol)
 {
@@ -282,6 +283,7 @@ openpic_config(device_t dev, u_int irq, enum intr_trigger trig,
 	else
 		x |= OPENPIC_SENSE_LEVEL;
 	openpic_write(sc, OPENPIC_SRC_VECTOR(irq), x);
+	return (0);
 }
 
 static int

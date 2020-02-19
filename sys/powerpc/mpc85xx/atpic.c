@@ -72,7 +72,7 @@ static int	atpic_isa_attach(device_t);
 static void	atpic_isa_identify(driver_t *, device_t);
 static int	atpic_isa_probe(device_t);
 
-static void atpic_config(device_t, u_int, enum intr_trigger,
+static int atpic_config(device_t, u_int, enum intr_trigger,
     enum intr_polarity);
 static void atpic_dispatch(device_t, struct trapframe *);
 static void atpic_enable(device_t, u_int, u_int);
@@ -246,10 +246,11 @@ atpic_isa_attach(device_t dev)
  * PIC interface.
  */
 
-static void
+static int
 atpic_config(device_t dev, u_int irq, enum intr_trigger trig,
     enum intr_polarity pol)
 {
+	return (0);
 }
 
 static void
