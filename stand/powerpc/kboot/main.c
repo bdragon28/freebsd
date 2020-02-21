@@ -250,17 +250,24 @@ found:
 }
 
 int
-main(int argc, const char **argv)
+main(int argc, const char **argv, char **envp)
 {
 	void *heapbase;
 	const size_t heapsize = 15*1024*1024;
 	const char *bootdev;
+	char **env;
 
 	/*
 	 * Set the heap to one page after the end of the loader.
 	 */
 	heapbase = host_getmem(heapsize);
 	setheap(heapbase, heapbase + heapsize);
+
+	/*
+	 * Copy out environment.
+	 */
+	for (env = envp; *env != NULL; env++)
+		putenv(*env);
 
 	/*
 	 * Set up console.
@@ -478,23 +485,6 @@ kboot_kseg_get(int *nseg, void **ptr)
 
 	*nseg = nkexec_segments;
 	*ptr = &loaded_segments[0];
-}
-
-void
-_start(int argc, const char **argv, char **env)
-{
-// This makes error "variable 'sp' is uninitialized" be just a warning on clang.
-// Initializing 'sp' is not desired here as it would overwrite "r1" original value
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic warning "-Wuninitialized"
-#endif
-	register volatile void **sp asm("r1");
-	main((int)sp[0], (const char **)&sp[1]);
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-
 }
 
 /*
