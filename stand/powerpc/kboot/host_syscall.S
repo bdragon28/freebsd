@@ -5,6 +5,12 @@
 
 #include <machine/asm.h>
 
+ENTRY(host_exit)
+	li %r0, 1 # SYS_exit
+	sc
+	trap
+END(host_exit)
+
 ENTRY(host_read)
 	li %r0, 3 # SYS_read
 	sc
