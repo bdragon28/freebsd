@@ -47,6 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/stat.h>
 #include <sys/sysctl.h>
 #include <sys/uio.h>
+//#include <sys/sdt.h>
 #include <sys/utsname.h>
 #include <sys/ktrace.h>
 
