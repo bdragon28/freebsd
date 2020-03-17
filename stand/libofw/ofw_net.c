@@ -212,19 +212,21 @@ ofwn_init(struct iodesc *desc, void *machdep_hint)
 		printf("Could not open network device.\n");
 		goto punt;
 	}
+printf("NETINSTANCE OPENED 0x%jx\n", (uintmax_t)netinstance);
 
-#if defined(NETIF_DEBUG)
+//#if defined(NETIF_DEBUG)
 	printf("ofwn_init: Open Firmware instance handle: %08x\n", netinstance);
-#endif
+//#endif
 	dmabuf = NULL;
 	if (OF_call_method("dma-alloc", netinstance, 1, 1, (64 * 1024), &dmabuf)
 	    < 0) {
 		printf("Failed to allocate DMA buffer (got %p).\n", dmabuf);
 		goto punt;
 	}
-#if defined(NETIF_DEBUG)
+
+//#if defined(NETIF_DEBUG)
 	printf("ofwn_init: allocated DMA buffer: %p\n", dmabuf);
-#endif
+//#endif
 
 	return;
 
@@ -237,11 +239,17 @@ punt:
 static void
 ofwn_end(struct netif *nif)
 {
+printf("ofwn_end(%p)\n", nif);
 #ifdef BROKEN
 	/* dma-free freezes at least some Apple ethernet controllers */
+printf("1");
 	OF_call_method("dma-free", netinstance, 2, 0, dmabuf, MAXPHYS);
 #endif
+printf("2");
+printf("Doing OF_close for %jx\n", (uintmax_t)netinstance);
+//printf(".... NOT!\n");
 	OF_close(netinstance);
+printf("3");
 }
 
 #if 0

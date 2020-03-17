@@ -213,6 +213,7 @@ ppc64_cas(void)
 		return (0);
 
 	ihandle = OF_open("/");
+printf("CAS ihandle 0x%jx\n", (uintmax_t)ihandle);
 	if (ihandle == -1) {
 		printf("cas: failed to open / node\n");
 		return (-1);

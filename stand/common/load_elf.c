@@ -1147,14 +1147,14 @@ __elfN(parse_modmetadata)(struct preloaded_file *fp, elf_file_t ef,
 	while (p < p_end) {
 printf("c ");
 		COPYOUT(p, &v, sizeof(v));
-printf("p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
+//printf("p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
 
 		error = __elfN(reloc_ptr)(fp, ef, p, &v, sizeof(v));
 		if (error == EOPNOTSUPP)
 			v += ef->off;
 		else if (error != 0)
 			return (error);
-printf("point2 p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
+//printf("point2 p = 0x%jx, v = 0x%jx, ef->off = 0x%jx\n", (uintmax_t)p, (uintmax_t)v, (uintmax_t)ef->off);
 #if (defined(__i386__) || defined(__powerpc__)) && __ELF_WORD_SIZE == 64
 printf("d ");
 		COPYOUT(v, &md64, sizeof(md64));

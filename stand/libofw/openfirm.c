@@ -518,6 +518,7 @@ OF_open(char *device)
 void
 OF_close(ihandle_t instance)
 {
+printf("OF_close %jx\n", (uintmax_t)instance);
 	static struct {
 		cell_t name;
 		cell_t nargs;
@@ -526,6 +527,7 @@ OF_close(ihandle_t instance)
 	} args = {
 		(cell_t)"close",
 		1,
+		0,
 	};
 
 	args.instance = instance;
@@ -683,6 +685,7 @@ OF_claim(void *virt, u_int size, u_int align)
 		cell_t virt;
 		cell_t size;
 		cell_t align;
+		/* -- */
 		cell_t baseaddr;
 	} args = {
 		(cell_t)"claim",

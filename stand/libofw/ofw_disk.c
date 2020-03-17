@@ -127,6 +127,7 @@ ofwd_open(struct open_file *f, ...)
 
 	if (dp != kdp) {
 		if (kdp != NULL) {
+printf("OF_close from open of second file...\n");
 			OF_close(kdp->d_handle);
 			kdp = NULL;
 		}

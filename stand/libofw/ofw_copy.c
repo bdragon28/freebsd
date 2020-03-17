@@ -88,11 +88,13 @@ printf(" adj 0x%jx / 0x%jx ", (uintmax_t)nlen, (uintmax_t)dest);
 		dlen = roundup(nlen + resid, PAGE_SIZE*MAPMEM_PAGE_INC);
 
 printf("ofw_mapmem: about to claim\n");
+printf("claim destp %p dlen %zx\n", destp, dlen);
         if (OF_call_method("claim", memory, 3, 1, destp, dlen, 0, &addr)
             == -1) {
                 printf("ofw_mapmem: physical claim failed\n");
                 return (ENOMEM);
         }
+printf("claim destp %p dlen 0x%zx addr 0x%jx\n", destp, dlen, (uintmax_t)addr);
 
 	/*
 	 * We only do virtual memory management when real_mode is false.

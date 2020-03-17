@@ -193,7 +193,9 @@ netif_attach(struct netif *nif, struct iodesc *desc, void *machdep_hint)
 void
 netif_detach(struct netif *nif)
 {
+	printf("Detaching nif %p\n", nif);
 	struct netif_driver *drv = nif->nif_driver;
+	printf("netif driver @ %p\n", drv);
 
 #ifdef NETIF_DEBUG
 	if (netif_debug)
@@ -204,7 +206,9 @@ netif_detach(struct netif *nif)
 		panic("%s%d: no netif_end support", drv->netif_bname,
 		    nif->nif_unit);
 #endif
+	printf("Calling netif_end @ 0x%jx\n", (uintmax_t)&drv->netif_end);
 	drv->netif_end(nif);
+	printf("... success???\n");
 }
 
 ssize_t
@@ -309,8 +313,12 @@ netif_close(int sock)
 		errno = EBADF;
 		return (-1);
 	}
+printf("netif_close(%d)\n", sock);
+printf(" aaa");
 	netif_detach(sockets[sock].io_netif);
+printf(" bbb");
 	sockets[sock].io_netif = (struct netif *)0;
+printf(" ccc");
 
 	return (0);
 }

@@ -175,7 +175,11 @@ dev_cleanup(void)
     int		i;
 
     /* Call cleanup routines */
-    for (i = 0; devsw[i] != NULL; ++i)
-	if (devsw[i]->dv_cleanup != NULL)
+    for (i = 0; devsw[i] != NULL; ++i) {
+	printf("devsw %d\n", i);
+	if (devsw[i]->dv_cleanup != NULL) {
+		printf("calling dv_cleanup @ %p\n", (void*)devsw[i]->dv_cleanup);
 	    (devsw[i]->dv_cleanup)();
+	}
+    }
 }
