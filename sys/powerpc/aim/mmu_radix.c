@@ -2165,7 +2165,7 @@ mmu_radix_proctab_register(vm_paddr_t proctabpa, uint64_t table_size)
 	uint64_t pagetab, proctab;
 
 	pagetab = be64toh(isa3_parttab[0].pagetab);
-	proctab = proctabpa | table_size | PARTTAB_GR;
+	proctab = DMAP_TO_PHYS(proctabpa) | table_size | PARTTAB_GR;
 	mmu_parttab_update(0, pagetab, proctab);
 }
 
