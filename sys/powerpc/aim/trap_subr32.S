@@ -255,45 +255,6 @@ dtrace_invop_calltrap_addr:
 #endif
 
 /*
- * The next two routines are 64-bit glue code. The first is used to test if
- * we are on a 64-bit system. By copying it to the illegal instruction
- * handler, we can test for 64-bit mode by trying to execute a 64-bit
- * instruction and seeing what happens. The second gets copied in front
- * of all the other handlers to restore 32-bit bridge mode when traps
- * are taken.
- */
-
-/* 64-bit test code. Sets SPRG2 to 0 if an illegal instruction is executed */
-
-	.globl	CNAME(testppc64),CNAME(testppc64size)
-CNAME(testppc64):
-	mtsprg1 %r31
-	mfsrr0  %r31
-	addi	%r31, %r31, 4
-	mtsrr0  %r31
-
-	li	%r31, 0
-	mtsprg2 %r31
-	mfsprg1 %r31
-
-	rfi
-CNAME(testppc64size) = .-CNAME(testppc64)
-
-
-/* 64-bit bridge mode restore snippet. Gets copied in front of everything else
- * on 64-bit systems. */
-
-	.globl	CNAME(restorebridge),CNAME(restorebridgesize)
-CNAME(restorebridge):
-	mtsprg1	%r31
-	mfmsr	%r31
-	clrldi	%r31,%r31,1
-	mtmsrd	%r31
-	mfsprg1	%r31
-	isync
-CNAME(restorebridgesize) = .-CNAME(restorebridge)
-
-/*
  * Processor reset exception handler. These are typically
  * the first instructions the processor executes after a
  * software reset. We do this in two bits so that we are
@@ -730,15 +691,6 @@ realtrap:
  * SPRG2 - Original LR
  */
 
-	.globl	CNAME(generictrap64)
-generictrap64:
-	mtsprg3	%r31
-	mfmsr	%r31
-	clrldi	%r31,%r31,1
-	mtmsrd	%r31
-	mfsprg3	%r31
-	isync
-
 	.globl	CNAME(generictrap)
 generictrap:
 	/* Save R1 for computing the exception vector */
@@ -818,13 +770,8 @@ CNAME(asttrapexit):
 1:
 	FRAME_LEAVE(PC_TEMPSAVE)
 
-	.globl	CNAME(rfi_patch1)	/* replace rfi with rfid on ppc64 */
-CNAME(rfi_patch1):
 	rfi
 
-	.globl	CNAME(rfid_patch)
-CNAME(rfid_patch):
-	rfid
 
 #if defined(KDB)
 /*
@@ -887,8 +834,6 @@ dbtrap:
 	b	realtrap
 dbleave:
 	FRAME_LEAVE(PC_DBSAVE)
-	.globl	CNAME(rfi_patch2)	/* replace rfi with rfid on ppc64 */
-CNAME(rfi_patch2):
 	rfi
 
 /*

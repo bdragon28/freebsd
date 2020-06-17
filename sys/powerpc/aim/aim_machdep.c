@@ -140,19 +140,13 @@ struct bat	battable[16];
 int radix_mmu = 0;
 
 #ifndef __powerpc64__
-/* Bits for running on 64-bit systems in 32-bit mode. */
-extern void	*testppc64, *testppc64size;
-extern void	*restorebridge, *restorebridgesize;
-extern void	*rfid_patch, *rfi_patch1, *rfi_patch2;
-extern void	*trapcode64;
-
 extern Elf_Addr	_GLOBAL_OFFSET_TABLE_[];
 #endif
 
 extern void	*rstcode, *rstcodeend;
 extern void	*trapcode, *trapcodeend;
 extern void	*hypertrapcode, *hypertrapcodeend;
-extern void	*generictrap, *generictrap64;
+extern void	*generictrap;
 extern void	*alitrap, *aliend;
 extern void	*dsitrap, *dsiend;
 extern void	*decrint, *decrsize;
@@ -243,10 +237,6 @@ aim_cpu_init(vm_offset_t toc)
 	register_t	msr;
 	uint8_t		*cache_check;
 	int		cacheline_warn;
-#ifndef __powerpc64__
-	register_t	scratch;
-	int		ppc64;
-#endif
 
 	trap_offset = 0;
 	cacheline_warn = 0;
@@ -296,7 +286,7 @@ aim_cpu_init(vm_offset_t toc)
 
 	/*
 	 * Initialize the interrupt tables and figure out our cache line
-	 * size and whether or not we need the 64-bit bridge code.
+	 * size.
 	 */
 
 	/*
@@ -332,43 +322,7 @@ aim_cpu_init(vm_offset_t toc)
 		cacheline_size = 32;
 	}
 
-	#ifndef __powerpc64__
-	/*
-	 * Figure out whether we need to use the 64 bit PMAP. This works by
-	 * executing an instruction that is only legal on 64-bit PPC (mtmsrd),
-	 * and setting ppc64 = 0 if that causes a trap.
-	 */
-
-	ppc64 = 1;
-
-	bcopy(&testppc64, (void *)EXC_PGM,  (size_t)&testppc64size);
-	__syncicache((void *)EXC_PGM, (size_t)&testppc64size);
-
-	__asm __volatile("\
-		mfmsr %0;	\
-		mtsprg2 %1;	\
-				\
-		mtmsrd %0;	\
-		mfsprg2 %1;"
-	    : "=r"(scratch), "=r"(ppc64));
-
-	if (ppc64)
-		cpu_features |= PPC_FEATURE_64;
-
-	/*
-	 * Now copy restorebridge into all the handlers, if necessary,
-	 * and set up the trap tables.
-	 */
-
-	if (cpu_features & PPC_FEATURE_64) {
-		/* Patch the two instances of rfi -> rfid */
-		bcopy(&rfid_patch,&rfi_patch1,4);
-	#ifdef KDB
-		/* rfi_patch2 is at the end of dbleave */
-		bcopy(&rfid_patch,&rfi_patch2,4);
-	#endif
-	}
-	#else /* powerpc64 */
+	#ifdef __powerpc64__
 	cpu_features |= PPC_FEATURE_64;
 	#endif
 
@@ -381,41 +335,7 @@ aim_cpu_init(vm_offset_t toc)
 	for (trap = EXC_RST; trap < EXC_LAST; trap += 0x20)
 		bcopy(&trapcode, (void *)trap, trapsize);
 
-	#ifndef __powerpc64__
-	if (cpu_features & PPC_FEATURE_64) {
-		/*
-		 * Copy a code snippet to restore 32-bit bridge mode
-		 * to the top of every non-generic trap handler
-		 */
-
-		trap_offset += (size_t)&restorebridgesize;
-		bcopy(&restorebridge, (void *)EXC_RST, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_DSI, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_ALI, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_PGM, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_MCHK, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_TRC, trap_offset);
-		bcopy(&restorebridge, (void *)EXC_BPT, trap_offset);
-	} else {
-		/*
-		 * Use an IBAT and a DBAT to map the bottom 256M segment.
-		 *
-		 * It is very important to do it *now* to avoid taking a
-		 * fault in .text / .data before the MMU is bootstrapped,
-		 * because until then, the translation data has not been
-		 * copied over from OpenFirmware, so our DSI/ISI will fail
-		 * to find a match.
-		 */
-
-		battable[0x0].batl = BATL(0x00000000, BAT_M, BAT_PP_RW);
-		battable[0x0].batu = BATU(0x00000000, BAT_BL_256M, BAT_Vs);
-
-		__asm (".balign 32; \n"
-		    "mtibatu 0,%0; mtibatl 0,%1; isync; \n"
-		    "mtdbatu 0,%0; mtdbatl 0,%1; isync"
-		    :: "r"(battable[0].batu), "r"(battable[0].batl));
-	}
-	#else
+	#ifdef __powerpc64__
 	trapsize = (size_t)&hypertrapcodeend - (size_t)&hypertrapcode;
 	bcopy(&hypertrapcode, (void *)(EXC_HEA + trap_offset), trapsize);
 	bcopy(&hypertrapcode, (void *)(EXC_HMI + trap_offset), trapsize);
@@ -449,10 +369,7 @@ aim_cpu_init(vm_offset_t toc)
 	*((register_t *)TRAP_TOCBASE) = toc;
 	#else
 	/* Set branch address for trap code */
-	if (cpu_features & PPC_FEATURE_64)
-		*((void **)TRAP_ENTRY) = &generictrap64;
-	else
-		*((void **)TRAP_ENTRY) = &generictrap;
+	*((void **)TRAP_ENTRY) = &generictrap;
 	*((void **)TRAP_TOCBASE) = _GLOBAL_OFFSET_TABLE_;
 
 	/* G2-specific TLB miss helper handlers */
@@ -477,6 +394,7 @@ aim_cpu_init(vm_offset_t toc)
 	 * in case the platform module had a better idea of what we
 	 * should do.
 	 */
+#ifdef __powerpc64__
 	if (cpu_features2 & PPC_FEATURE2_ARCH_3_00) {
 		radix_mmu = 0;
 		TUNABLE_INT_FETCH("radix_mmu", &radix_mmu);
@@ -484,10 +402,11 @@ aim_cpu_init(vm_offset_t toc)
 			pmap_mmu_install(MMU_TYPE_RADIX, BUS_PROBE_GENERIC);
 		else
 			pmap_mmu_install(MMU_TYPE_G5, BUS_PROBE_GENERIC);
-	} else if (cpu_features & PPC_FEATURE_64)
+	} else
 		pmap_mmu_install(MMU_TYPE_G5, BUS_PROBE_GENERIC);
-	else
-		pmap_mmu_install(MMU_TYPE_OEA, BUS_PROBE_GENERIC);
+#else
+	pmap_mmu_install(MMU_TYPE_OEA, BUS_PROBE_GENERIC);
+#endif
 }
 
 /*

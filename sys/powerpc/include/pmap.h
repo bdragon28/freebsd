@@ -122,11 +122,12 @@ struct pvo_entry {
 #ifndef __powerpc64__
 		/* 32-bit fields */
 		pte_t	    pte;
-#endif
+#else
 		/* 64-bit fields */
 		uintptr_t   slot;
 		vm_paddr_t  pa;
 		vm_prot_t   prot;
+#endif
 	} pvo_pte;
 	pmap_t		pvo_pmap;		/* Owning pmap */
 	vm_offset_t	pvo_vaddr;		/* VA of entry */
