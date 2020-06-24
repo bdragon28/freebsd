@@ -1,0 +1,240 @@
+/*-
+ * SPDX-License-Identifier: BSD-1-Clause
+ *
+ * Copyright 2019 Justin Hibbits
+ * Copyright 2020 Brandon Bergren
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <machine/asm.h>
+__FBSDID("$FreeBSD$");
+
+#ifdef _CALL_ELF
+.abiversion _CALL_ELF
+#endif
+
+.text
+
+/*
+ * The PowerPC 64-bit ELF V2 ABI spec requires the following save/restore
+ * functions to be provided:
+ *
+ * _savegpr0_N
+ * _restgpr0_N
+ * _savegpr1_N
+ * _restgpr1_N
+ * _savefpr_N
+ * _restfpr_N
+ * _savevr_M
+ * _restvr_M
+ *
+ * With N ranging from 14 to 31, and M ranging from 20 to 31, to save the
+ * nonvolatile registers.
+ */
+
+#if defined(_CALL_ELF) && _CALL_ELF == 2
+#define _CRTENTRY(name) \
+	.text; \
+	.globl	name; \
+	.type	name,@function; \
+        .localentry	name, 0; \
+	name:
+#else
+#error "Not implemented"
+#endif
+
+#define SAVEGPR0(r)	_CRTENTRY(__CONCAT(_savegpr0_,r))	\
+	std	r,(-256 + r * 8)(%r1)
+
+SAVEGPR0(14)
+SAVEGPR0(15)
+SAVEGPR0(16)
+SAVEGPR0(17)
+SAVEGPR0(18)
+SAVEGPR0(19)
+SAVEGPR0(20)
+SAVEGPR0(21)
+SAVEGPR0(22)
+SAVEGPR0(23)
+SAVEGPR0(24)
+SAVEGPR0(25)
+SAVEGPR0(26)
+SAVEGPR0(27)
+SAVEGPR0(28)
+SAVEGPR0(29)
+SAVEGPR0(30)
+SAVEGPR0(31)
+	std	%r0, 16(%r1);
+	blr
+
+#define RESTGPR0(r)	_CRTENTRY(__CONCAT(_restgpr0_,r))	\
+	ld	r,(-256 + r * 8)(%r1)
+
+RESTGPR0(14)
+RESTGPR0(15)
+RESTGPR0(16)
+RESTGPR0(17)
+RESTGPR0(18)
+RESTGPR0(19)
+RESTGPR0(20)
+RESTGPR0(21)
+RESTGPR0(22)
+RESTGPR0(23)
+RESTGPR0(24)
+RESTGPR0(25)
+RESTGPR0(26)
+RESTGPR0(27)
+RESTGPR0(28)
+RESTGPR0(29)
+RESTGPR0(30)
+RESTGPR0(31)
+	ld	%r0, 16(%r1);
+	mtlr	%r0
+	blr
+
+#define SAVEGPR1(r)	_CRTENTRY(__CONCAT(_savegpr1_,r))	\
+	std	r,(-256 + r * 8)(%r12)
+
+SAVEGPR1(14)
+SAVEGPR1(15)
+SAVEGPR1(16)
+SAVEGPR1(17)
+SAVEGPR1(18)
+SAVEGPR1(19)
+SAVEGPR1(20)
+SAVEGPR1(21)
+SAVEGPR1(22)
+SAVEGPR1(23)
+SAVEGPR1(24)
+SAVEGPR1(25)
+SAVEGPR1(26)
+SAVEGPR1(27)
+SAVEGPR1(28)
+SAVEGPR1(29)
+SAVEGPR1(30)
+SAVEGPR1(31)
+	blr
+
+#define RESTGPR1(r)	_CRTENTRY(__CONCAT(_restgpr1_,r))	\
+	ld	r,(-256 + r * 8)(%r12)
+
+RESTGPR1(14)
+RESTGPR1(15)
+RESTGPR1(16)
+RESTGPR1(17)
+RESTGPR1(18)
+RESTGPR1(19)
+RESTGPR1(20)
+RESTGPR1(21)
+RESTGPR1(22)
+RESTGPR1(23)
+RESTGPR1(24)
+RESTGPR1(25)
+RESTGPR1(26)
+RESTGPR1(27)
+RESTGPR1(28)
+RESTGPR1(29)
+RESTGPR1(30)
+RESTGPR1(31)
+	blr
+
+#define SAVEFPR(r)	_CRTENTRY(__CONCAT(_savefpr_,r))	\
+	stfd	__CONCAT(%f,r),(-256 + r * 8)(%r1)
+
+SAVEFPR(14)
+SAVEFPR(15)
+SAVEFPR(16)
+SAVEFPR(17)
+SAVEFPR(18)
+SAVEFPR(19)
+SAVEFPR(20)
+SAVEFPR(21)
+SAVEFPR(22)
+SAVEFPR(23)
+SAVEFPR(24)
+SAVEFPR(25)
+SAVEFPR(26)
+SAVEFPR(27)
+SAVEFPR(28)
+SAVEFPR(29)
+SAVEFPR(30)
+SAVEFPR(31)
+	std	%r0, 16(%r1);
+	blr
+
+#define RESTFPR(r)	_CRTENTRY(__CONCAT(_restfpr_,r))	\
+	lfd	__CONCAT(%f,r),(-256 + r * 8)(%r1)
+
+RESTFPR(14)
+RESTFPR(15)
+RESTFPR(16)
+RESTFPR(17)
+RESTFPR(18)
+RESTFPR(19)
+RESTFPR(20)
+RESTFPR(21)
+RESTFPR(22)
+RESTFPR(23)
+RESTFPR(24)
+RESTFPR(25)
+RESTFPR(26)
+RESTFPR(27)
+RESTFPR(28)
+RESTFPR(29)
+RESTFPR(30)
+RESTFPR(31)
+	ld	%r0, 16(%r1)
+	mtlr	%r0
+	blr
+
+#define SAVEVR(r)	_CRTENTRY(__CONCAT(_savevr_,r))		\
+	li	%r12, (-512 + r * 16);				\
+	stvx	__CONCAT(%v,r), %r12, %r0;
+
+SAVEVR(20)
+SAVEVR(21)
+SAVEVR(22)
+SAVEVR(23)
+SAVEVR(24)
+SAVEVR(25)
+SAVEVR(26)
+SAVEVR(27)
+SAVEVR(28)
+SAVEVR(29)
+SAVEVR(30)
+SAVEVR(31)
+	blr
+
+#define RESTVR(r)	_CRTENTRY(__CONCAT(_ressstvr_,r))	\
+	li	%r12, (-512 + r * 16);				\
+	lvx	__CONCAT(%v,r), %r12, %r0;
+
+RESTVR(20)
+RESTVR(21)
+RESTVR(22)
+RESTVR(23)
+RESTVR(24)
+RESTVR(25)
+RESTVR(26)
+RESTVR(27)
+RESTVR(28)
+RESTVR(29)
+RESTVR(30)
+RESTVR(31)
+	blr
