@@ -158,6 +158,7 @@ enum sysinit_sub_id {
 	SI_SUB_KPROF		= 0x9000000,	/* kernel profiling*/
 	SI_SUB_KICK_SCHEDULER	= 0xa000000,	/* start the timeout events*/
 	SI_SUB_INT_CONFIG_HOOKS	= 0xa800000,	/* Interrupts enabled config */
+	SI_SUB_SMP		= 0xa900000,	/* TEMP START APS */
 	SI_SUB_ROOT_CONF	= 0xb000000,	/* Find root devices */
 	SI_SUB_INTRINSIC_POST	= 0xd000000,	/* proc 0 cleanup*/
 	SI_SUB_SYSCALLS		= 0xd800000,	/* register system calls */
@@ -169,7 +170,7 @@ enum sysinit_sub_id {
 	SI_SUB_KTHREAD_UPDATE	= 0xec00000,	/* update daemon*/
 	SI_SUB_KTHREAD_IDLE	= 0xee00000,	/* idle procs*/
 #ifndef EARLY_AP_STARTUP
-	SI_SUB_SMP		= 0xf000000,	/* start the APs*/
+//	SI_SUB_SMP		= 0xf000000,	/* start the APs*/
 #endif	
 	SI_SUB_RACCTD		= 0xf100000,	/* start racctd*/
 	SI_SUB_LAST		= 0xfffffff	/* final initialization */
