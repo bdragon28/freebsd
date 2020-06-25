@@ -155,6 +155,7 @@ static void
 ofw_dump_property(int fd, phandle_t n, int level, const char *prop, int raw,
     int str)
 {
+printf("dumping %s\n", prop);
 	static void *pbuf = NULL;
 	static char *visbuf = NULL;
 	static char printbuf[CHARSPERLINE + 1];
