@@ -865,13 +865,17 @@ bootpc_fakeup_interface(struct bootpc_ifcontext *ifctx, struct thread *td)
 	 * Get the old interface flags and or IFF_UP into them; if
 	 * IFF_UP set blindly, interface selection can be clobbered.
 	 */
+printf("\nbootpc_fakeup_interface()\n");
 	error = ifioctl(bootp_so, SIOCGIFFLAGS, (caddr_t)ifr, td);
 	if (error != 0)
 		panic("%s: SIOCGIFFLAGS, error=%d", __func__, error);
+printf("A ");
 	ifr->ifr_flags |= IFF_UP;
+printf("B ");
 	error = ifioctl(bootp_so, SIOCSIFFLAGS, (caddr_t)ifr, td);
 	if (error != 0)
 		panic("%s: SIOCSIFFLAGS, error=%d", __func__, error);
+printf("C ");
 
 	/*
 	 * Do enough of ifconfig(8) so that the chosen interface
@@ -886,9 +890,11 @@ bootpc_fakeup_interface(struct bootpc_ifcontext *ifctx, struct thread *td)
 	sin = (struct sockaddr_in *)&ifra->ifra_broadaddr;
 	clear_sinaddr(sin);
 	sin->sin_addr.s_addr = htonl(INADDR_BROADCAST);
+printf("D ");
 	error = ifioctl(bootp_so, SIOCAIFADDR, (caddr_t)ifra, td);
 	if (error != 0)
 		panic("%s: SIOCAIFADDR, error=%d", __func__, error);
+printf("E ");
 }
 
 static void
@@ -1513,9 +1519,12 @@ bootpc_init(void)
 
 	timeout = BOOTP_IFACE_WAIT_TIMEOUT * hz;
 	delay = hz / 10;
+printf("bootpc_init()\n");
 
 	nd = &nfsv3_diskless;
 	td = curthread;
+
+printf("1 ");
 
 	/*
 	 * If already filled in, don't touch it here
@@ -1523,11 +1532,14 @@ bootpc_init(void)
 	if (nfs_diskless_valid != 0)
 		return;
 
+printf("2 ");
 	gctx = malloc(sizeof(*gctx), M_TEMP, M_WAITOK | M_ZERO);
 	STAILQ_INIT(&gctx->interfaces);
+printf("3 ");
 	gctx->xid = ~0xFFFF;
 	gctx->starttime = time_second;
 
+printf("4 ");
 	/*
 	 * If ROOTDEVNAME is defined or vfs.root.mountfrom is set then we have
 	 * root-path overrides that can potentially let us boot even if we don't
@@ -1543,10 +1555,12 @@ bootpc_init(void)
 	 * Find a network interface.
 	 */
 	CURVNET_SET(TD_TO_VNET(td));
+printf("5 ");
 #ifdef BOOTP_WIRED_TO
 	printf("%s: wired to interface '%s'\n", __func__, 
 	       __XSTRING(BOOTP_WIRED_TO));
 	allocifctx(gctx);
+printf("5a ");
 #else
 	/*
 	 * Preallocate interface context storage, if another interface
@@ -1554,11 +1568,13 @@ bootpc_init(void)
 	 */
 	ifcnt = 0;
 	IFNET_RLOCK();
+printf("6 ");
 	CK_STAILQ_FOREACH(ifp, &V_ifnet, if_link) {
 		if ((ifp->if_flags &
 		     (IFF_LOOPBACK | IFF_POINTOPOINT | IFF_BROADCAST)) !=
 		    IFF_BROADCAST)
 			continue;
+printf("7 ");
 		switch (ifp->if_alloctype) {
 			case IFT_ETHER:
 				break;
@@ -1566,28 +1582,37 @@ bootpc_init(void)
 				continue;
 		}
 		ifcnt++;
+printf("8 ");
 	}
 	IFNET_RUNLOCK();
+printf("9 ");
 	if (ifcnt == 0)
 		panic("%s: no eligible interfaces", __func__);
+printf("10 ");
 	for (; ifcnt > 0; ifcnt--)
 		allocifctx(gctx);
+printf("11 ");
 #endif
 
 retry:
+printf("12 ");
 	ifctx = STAILQ_FIRST(&gctx->interfaces);
 	IFNET_RLOCK();
+printf("13 ");
 	CK_STAILQ_FOREACH(ifp, &V_ifnet, if_link) {
 		if (ifctx == NULL)
 			break;
+printf("14 ");
 #ifdef BOOTP_WIRED_TO
 		if (strcmp(ifp->if_xname, __XSTRING(BOOTP_WIRED_TO)) != 0)
 			continue;
 #else
+printf("15 ");
 		if ((ifp->if_flags &
 		     (IFF_LOOPBACK | IFF_POINTOPOINT | IFF_BROADCAST)) !=
 		    IFF_BROADCAST)
 			continue;
+printf("16 ");
 		switch (ifp->if_alloctype) {
 			case IFT_ETHER:
 				break;
@@ -1597,6 +1622,7 @@ retry:
 #endif
 		strlcpy(ifctx->ireq.ifr_name, ifp->if_xname,
 		    sizeof(ifctx->ireq.ifr_name));
+printf("17 ");
 		ifctx->ifp = ifp;
 
 		/* Get HW address */
@@ -1607,16 +1633,20 @@ retry:
 				if (sdl->sdl_type == IFT_ETHER)
 					break;
 			}
+printf("18 ");
 		if (sdl == NULL)
 			panic("bootpc: Unable to find HW address for %s",
 			    ifctx->ireq.ifr_name);
 		ifctx->sdl = sdl;
 
 		ifctx = STAILQ_NEXT(ifctx, next);
+printf("19 ");
 	}
 	IFNET_RUNLOCK();
+printf("20 ");
 	CURVNET_RESTORE();
 
+printf("21 ");
 	if (STAILQ_EMPTY(&gctx->interfaces) ||
 	    STAILQ_FIRST(&gctx->interfaces)->ifp == NULL) {
 		if (timeout > 0) {
@@ -1624,6 +1654,7 @@ retry:
 			timeout -= delay;
 			goto retry;
 		}
+printf("22 ");
 #ifdef BOOTP_WIRED_TO
 		panic("%s: Could not find interface specified "
 		      "by BOOTP_WIRED_TO: "
@@ -1633,27 +1664,36 @@ retry:
 #endif
 	}
 
+printf("23 ");
 	error = socreate(AF_INET, &bootp_so, SOCK_DGRAM, 0, td->td_ucred, td);
 	if (error != 0)
 		panic("%s: socreate, error=%d", __func__, error);
 
-	STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
+printf("23a ");
+	STAILQ_FOREACH(ifctx, &gctx->interfaces, next) {
+		printf("ifup ");
 		bootpc_fakeup_interface(ifctx, td);
+	}
 
-	STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
+	STAILQ_FOREACH(ifctx, &gctx->interfaces, next) {
+		printf("composequery ");
 		bootpc_compose_query(ifctx, td);
+	}
 
+printf("24 ");
 	error = bootpc_call(gctx, td);
 	if (error != 0) {
 		printf("BOOTP call failed\n");
 	}
-
+printf("25 ");
 	mountopts(&nd->root_args, NULL);
 
+printf("26 ");
 	STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
 		if (bootpc_ifctx_isresolved(ifctx) != 0)
 			bootpc_decode_reply(nd, ifctx, gctx);
 
+printf("27 ");
 #ifdef BOOTP_NFSROOT
 	if (gctx->gotrootpath == 0 && gctx->any_root_overrides == 0)
 		panic("bootpc: No root path offered");
@@ -1662,22 +1702,26 @@ retry:
 	STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
 		bootpc_adjust_interface(ifctx, gctx, td);
 
+printf("28 ");
 	soclose(bootp_so);
 
 	STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
 		if (ifctx->gotrootpath != 0)
 			break;
+printf("29 ");
 	if (ifctx == NULL) {
 		STAILQ_FOREACH(ifctx, &gctx->interfaces, next)
 			if (bootpc_ifctx_isresolved(ifctx) != 0)
 				break;
 	}
+printf("30 ");
 	if (ifctx == NULL)
 		goto out;
 
 	if (gctx->gotrootpath != 0) {
 		struct epoch_tracker et;
 
+printf("31 ");
 		kern_setenv("boot.netif.name", ifctx->ifp->if_xname);
 
 		NET_EPOCH_ENTER(et);
@@ -1687,6 +1731,7 @@ retry:
 				 &nd->root_args, td);
 		bootpc_remove_default_route(ifctx);
 		NET_EPOCH_EXIT(et);
+printf("32 ");
 		if (error != 0) {
 			if (gctx->any_root_overrides == 0)
 				panic("nfs_boot: mount root, error=%d", error);
@@ -1695,23 +1740,29 @@ retry:
 		}
 		rootdevnames[0] = "nfs:";
 		nfs_diskless_valid = 3;
+printf("33 ");
 	}
 
 	strcpy(nd->myif.ifra_name, ifctx->ireq.ifr_name);
 	bcopy(&ifctx->myaddr, &nd->myif.ifra_addr, sizeof(ifctx->myaddr));
 	bcopy(&ifctx->myaddr, &nd->myif.ifra_broadaddr, sizeof(ifctx->myaddr));
+printf("34 ");
 	((struct sockaddr_in *) &nd->myif.ifra_broadaddr)->sin_addr.s_addr =
 		ifctx->myaddr.sin_addr.s_addr |
 		~ ifctx->netmask.sin_addr.s_addr;
 	bcopy(&ifctx->netmask, &nd->myif.ifra_mask, sizeof(ifctx->netmask));
 	bcopy(&ifctx->gw, &nd->mygateway, sizeof(ifctx->gw));
+printf("35 ");
 
 out:
 	while((ifctx = STAILQ_FIRST(&gctx->interfaces)) != NULL) {
 		STAILQ_REMOVE_HEAD(&gctx->interfaces, next);
 		free(ifctx, M_TEMP);
+printf("36 ");
 	}
+printf("37 ");
 	free(gctx, M_TEMP);
+printf("\nEND\n");
 }
 
 /*
