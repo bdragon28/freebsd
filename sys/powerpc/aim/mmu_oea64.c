@@ -4322,13 +4322,15 @@ bdragon_dump_bridge()
 {
 	register_t i;
 	uint32_t sr;
-	uint32_t slbvH, slbvL, slbeH, slbeL;
+	/* uint32_t slbvH, slbvL, slbeH, slbeL; */
 	/* 64 = PPC970E */
+/*
         for (i = 0; i < 16; i++) {
                 __asm __volatile ("slbmfev %0,%2; mr %1,%0; sldi %0,%0,32" : "=r"(slbvH), "=r"(slbvL) : "r"(i));
                 __asm __volatile ("slbmfee %0,%2; mr %1,%0; sldi %0,%0,32" : "=r"(slbeH), "=r"(slbeL) : "r"(i));
 		printf("%02d: VH:0x%x VL:0x%x EH:0x%x EL:0x%x\n", i, slbvH, slbvL, slbeH, slbeL);
         }
+*/
 
 	for (i = 0; i < 16; i++) {
 		sr = mfsrin(i << ADDR_SR_SHFT);
