@@ -705,6 +705,7 @@ mmu_booke_pinit(pmap_t pmap)
 	bzero(&pmap->pm_stats, sizeof(pmap->pm_stats));
 	pmap->pm_pdir = uma_zalloc(ptbl_root_zone, M_WAITOK);
 	bzero(pmap->pm_pdir, sizeof(pte_t *) * PDIR_NENTRIES);
+	TAILQ_INIT(&pmap->pm_pvchunk);
 	TAILQ_INIT(&pmap->pm_ptbl_list);
 
 	return (1);

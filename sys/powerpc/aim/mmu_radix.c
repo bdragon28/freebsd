@@ -89,6 +89,8 @@ __FBSDID("$FreeBSD$");
 #include <vm/uma_dbg.h>
 #endif
 
+#include <powerpc/powerpc/mmu_common.c>
+
 #define PPC_BITLSHIFT(bit)	(sizeof(long)*NBBY - 1 - (bit))
 #define PPC_BIT(bit)		(1UL << PPC_BITLSHIFT(bit))
 #define PPC_BITLSHIFT_VAL(val, bit) ((val) << PPC_BITLSHIFT(bit))
@@ -650,7 +652,6 @@ enum {
 static int pmap_initialized;
 static vm_paddr_t proctab0pa;
 static vm_paddr_t parttab_phys;
-CTASSERT(sizeof(struct pv_chunk) == PAGE_SIZE);
 
 /*
  * Data for the pv entry allocation mechanism.
@@ -1142,20 +1143,6 @@ pmap_invalidate_l3e_page(pmap_t pmap, vm_offset_t va, pml3_entry_t l3e)
 
 	pmap_invalidate_pwc(pmap);
 }
-
-static __inline struct pv_chunk *
-pv_to_chunk(pv_entry_t pv)
-{
-
-	return ((struct pv_chunk *)((uintptr_t)pv & ~(uintptr_t)PAGE_MASK));
-}
-
-#define PV_PMAP(pv) (pv_to_chunk(pv)->pc_pmap)
-
-#define	PC_FREE0	0xfffffffffffffffful
-#define	PC_FREE1	0x3ffffffffffffffful
-
-static const uint64_t pc_freemask[_NPCM] = { PC_FREE0, PC_FREE1 };
 
 /*
  * Ensure that the number of spare PV entries in the specified pmap meets or

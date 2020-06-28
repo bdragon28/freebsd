@@ -80,6 +80,10 @@
 #include <vm/vm_radix.h>
 #endif
 
+#if defined(BOOKE)
+/* XXX Fix me. */
+#define NEEDS_PV_PMAP
+#endif
 
 /*
  * The radix page table structure is described by levels 1-4.
@@ -164,6 +168,7 @@ struct	pmap {
 	struct		pmap_statistics	pm_stats;
 	struct	mtx	pm_mtx;
 	cpuset_t	pm_active;
+	TAILQ_HEAD(,pv_chunk)	pm_pvchunk;	/* list of mappings in pmap */
 	union {
 		struct {
 		    #ifdef __powerpc64__
@@ -182,7 +187,6 @@ struct	pmap {
 		struct {
 			pml1_entry_t	*pm_pml1;	/* KVA of root page directory */
 			struct vm_radix	 pm_radix;	/* spare page table pages */
-			TAILQ_HEAD(,pv_chunk)	pm_pvchunk;	/* list of mappings in pmap */
 			uint64_t	pm_pid; /* PIDR value */
 			int pm_flags;
 		};
@@ -215,16 +219,37 @@ struct	pmap {
  * pv_entries are allocated in chunks per-process.  This avoids the
  * need to track per-pmap assignments.
  */
-#define	_NPCM	2
-#define	_NPCPV	126
+#if defined(__powerpc64__)
+#define	pc_bitmap_t	uint64_t
+#if defined(NEEDS_PV_PMAP)
+#define	_NPCM		2
+#define	_NPCPV		126
+#define	_PV_CHUNK_SLOP	8
+#else
+#define	_NPCM		3
+#define	_NPCPV		168
+#else /* powerpc */
+#define	pc_bitmap_t	uint32_t
+#if defined(NEEDS_PV_PMAP)
+#define	_NPCM		8
+#define	_NPCPV		252
+#define	_PV_CHUNK_SLOP	12
+#else
+#define	_NPCM		11
+#define	_NPCPV		336
+#endif
+#endif
+
 #define	PV_CHUNK_HEADER							\
 	pmap_t			pc_pmap;				\
 	TAILQ_ENTRY(pv_chunk)	pc_list;				\
-	uint64_t		pc_map[_NPCM];	/* bitmap; 1 = free */	\
+	pc_bitmap_t		pc_map[_NPCM];	/* bitmap; 1 = free */	\
 	TAILQ_ENTRY(pv_chunk)	pc_lru;
 
 struct pv_entry {
+#if defined(NEEDS_PV_PMAP)
 	pmap_t pv_pmap;
+#endif
 	vm_offset_t pv_va;
 	TAILQ_ENTRY(pv_entry) pv_link;
 };
@@ -235,8 +260,10 @@ struct pv_chunk_header {
 };
 struct pv_chunk {
 	PV_CHUNK_HEADER
-	uint64_t	reserved;
 	struct pv_entry		pc_pventry[_NPCPV];
+#if defined(_PV_CHUNK_SLOP)
+	char			reserved[_PV_CHUNK_SLOP];
+#endif
 };
 
 struct	md_page {

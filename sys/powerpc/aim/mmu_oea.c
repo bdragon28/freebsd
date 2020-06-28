@@ -149,6 +149,8 @@ __FBSDID("$FreeBSD$");
 #include <machine/mmuvar.h>
 #include <machine/trap.h>
 
+#include <powerpc/powerpc/mmu_common.c>
+
 #define	MOEA_DEBUG
 
 #define TODO	panic("%s: not implemented", __func__);

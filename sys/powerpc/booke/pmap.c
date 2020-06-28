@@ -252,8 +252,8 @@ static inline unsigned int tlb0_tableidx(vm_offset_t, unsigned int);
 static struct rwlock_padalign pvh_global_lock;
 
 /* Data for the pv entry allocation mechanism */
-static uma_zone_t pvzone;
 static int pv_entry_count = 0, pv_entry_max = 0, pv_entry_high_water = 0;
+static int shpgperproc = PMAP_SHPGPERPROC;
 
 #define PV_ENTRY_ZONE_MIN	2048	/* min pv entries in uma zone */
 
@@ -267,8 +267,8 @@ static int pte_remove(pmap_t, vm_offset_t, uint8_t);
 static pte_t *pte_find(pmap_t, vm_offset_t);
 static void kernel_pte_alloc(vm_offset_t, vm_offset_t);
 
-static pv_entry_t pv_alloc(void);
-static void pv_free(pv_entry_t);
+static pv_entry_t pv_alloc(pmap_t);
+static void pv_free(pmap_t, pv_entry_t);
 static void pv_insert(pmap_t, vm_offset_t, vm_page_t);
 static void pv_remove(pmap_t, vm_offset_t, vm_page_t);
 
@@ -540,7 +540,7 @@ tlb1_get_tlbconf(void)
 
 /* Allocate pv_entry structure. */
 pv_entry_t
-pv_alloc(void)
+pv_alloc(pmap_t pmap)
 {
 	pv_entry_t pv;
 
@@ -911,6 +911,8 @@ mmu_booke_bootstrap(vm_offset_t start, vm_offset_t kernelend)
 	/* Mark kernel_pmap active on all CPUs */
 	CPU_FILL(&kernel_pmap->pm_active);
 
+	TAILQ_INIT(&kernel_pmap->pm_pvchunk);
+
  	/*
 	 * Initialize the global pv list lock.
 	 */
@@ -1057,26 +1059,17 @@ mmu_booke_kextract(vm_offset_t va)
 static void
 mmu_booke_init()
 {
-	int shpgperproc = PMAP_SHPGPERPROC;
 
 	/*
 	 * Initialize the address space (zone) for the pv entries.  Set a
 	 * high water mark so that the system can recover from excessive
 	 * numbers of pv entries.
 	 */
-	pvzone = uma_zcreate("PV ENTRY", sizeof(struct pv_entry), NULL, NULL,
-	    NULL, NULL, UMA_ALIGN_PTR, UMA_ZONE_VM | UMA_ZONE_NOFREE);
-
 	TUNABLE_INT_FETCH("vm.pmap.shpgperproc", &shpgperproc);
 	pv_entry_max = shpgperproc * maxproc + vm_cnt.v_page_count;
 
 	TUNABLE_INT_FETCH("vm.pmap.pv_entries", &pv_entry_max);
 	pv_entry_high_water = 9 * (pv_entry_max / 10);
-
-	uma_zone_reserve_kva(pvzone, pv_entry_max);
-
-	/* Pre-fill pvzone with initial number of pv entries. */
-	uma_prealloc(pvzone, PV_ENTRY_ZONE_MIN);
 
 	/* Create a UMA zone for page table roots. */
 	ptbl_root_zone = uma_zcreate("pmap root", PMAP_ROOT_SIZE,
