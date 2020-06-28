@@ -3089,22 +3089,6 @@ retry:
 	return (pv);
 }
 
-/*
- *  Create a pv entry for page at pa for
- *  (pmap, va).
- */
-static void
-pmap_insert_entry(pmap_t pmap, vm_offset_t va, vm_page_t m)
-{
-	pv_entry_t pv;
-
-	rw_assert(&pvh_global_lock, RA_WLOCKED);
-	PMAP_LOCK_ASSERT(pmap, MA_OWNED);
-	pv = get_pv_entry(pmap, FALSE);
-	pv->pv_va = va;
-	TAILQ_INSERT_TAIL(&m->md.pv_list, pv, pv_next);
-}
-
 static __inline pv_entry_t
 pmap_pvh_remove(struct md_page *pvh, pmap_t pmap, vm_offset_t va)
 {
@@ -3128,20 +3112,6 @@ pmap_pvh_free(struct md_page *pvh, pmap_t pmap, vm_offset_t va)
 	pv = pmap_pvh_remove(pvh, pmap, va);
 	KASSERT(pv != NULL, ("pmap_pvh_free: pv not found"));
 	free_pv_entry(pmap, pv);
-}
-
-static void
-pmap_remove_entry(pmap_t pmap, vm_page_t m, vm_offset_t va)
-{
-	struct md_page *pvh;
-
-	rw_assert(&pvh_global_lock, RA_WLOCKED);
-	pmap_pvh_free(&m->md, pmap, va);
-	if (TAILQ_EMPTY(&m->md.pv_list) && (m->flags & PG_FICTITIOUS) == 0) {
-		pvh = pa_to_pvh(VM_PAGE_TO_PHYS(m));
-		if (TAILQ_EMPTY(&pvh->pv_list))
-			vm_page_aflag_clear(m, PGA_WRITEABLE);
-	}
 }
 
 static void
@@ -3173,7 +3143,9 @@ pmap_pv_demote_pte1(pmap_t pmap, vm_offset_t va, vm_paddr_t pa)
 		KASSERT((m->oflags & VPO_UNMANAGED) == 0,
 		    ("pmap_pv_demote_pte1: page %p is not managed", m));
 		va += PAGE_SIZE;
-		pmap_insert_entry(pmap, va, m);
+		pv = get_pv_entry(pmap, FALSE);
+		pv->pv_va = va;
+		TAILQ_INSERT_TAIL(&m->md.pv_list, pv, pv_next);
 	} while (va < va_last);
 }
 
@@ -4130,7 +4102,13 @@ pmap_remove_pte2(pmap_t pmap, pt2_entry_t *pte2p, vm_offset_t va,
 			vm_page_dirty(m);
 		if (opte2 & PTE2_A)
 			vm_page_aflag_set(m, PGA_REFERENCED);
-		pmap_remove_entry(pmap, m, va);
+		pmap_pvh_free(&m->md, pmap, va);
+		if (TAILQ_EMPTY(&m->md.pv_list) &&
+		    (m->flags & PG_FICTITIOUS) == 0) {
+			pvh = pa_to_pvh(VM_PAGE_TO_PHYS(m));
+			if (TAILQ_EMPTY(&pvh->pv_list))
+				vm_page_aflag_clear(m, PGA_WRITEABLE);
+		}
 	}
 	return (pmap_unuse_pt2(pmap, va, free));
 }

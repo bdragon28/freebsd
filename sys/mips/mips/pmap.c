@@ -172,7 +172,6 @@ static void pmap_grow_direct_page(int req);
 static int pmap_remove_pte(struct pmap *pmap, pt_entry_t *ptq, vm_offset_t va,
     pd_entry_t pde);
 static void pmap_remove_page(struct pmap *pmap, vm_offset_t va);
-static void pmap_remove_entry(struct pmap *pmap, vm_page_t m, vm_offset_t va);
 static boolean_t pmap_try_insert_pv_entry(pmap_t pmap, vm_page_t mpte,
     vm_offset_t va, vm_page_t m);
 static void pmap_update_page(pmap_t pmap, vm_offset_t va, pt_entry_t pte);
@@ -1709,16 +1708,6 @@ pmap_pvh_free(struct md_page *pvh, pmap_t pmap, vm_offset_t va)
 	free_pv_entry(pmap, pv);
 }
 
-static void
-pmap_remove_entry(pmap_t pmap, vm_page_t m, vm_offset_t va)
-{
-
-	rw_assert(&pvh_global_lock, RA_WLOCKED);
-	pmap_pvh_free(&m->md, pmap, va);
-	if (TAILQ_EMPTY(&m->md.pv_list))
-		vm_page_aflag_clear(m, PGA_WRITEABLE);
-}
-
 /*
  * Conditionally create a pv entry.
  */
@@ -1798,7 +1787,9 @@ pmap_remove_pte(struct pmap *pmap, pt_entry_t *ptq, vm_offset_t va,
 			vm_page_aflag_set(m, PGA_REFERENCED);
 		m->md.pv_flags &= ~PV_TABLE_REF;
 
-		pmap_remove_entry(pmap, m, va);
+		pmap_pvh_free(&m->md, pmap, va);
+		if (TAILQ_EMPTY(&m->md.pv_list))
+			vm_page_aflag_clear(m, PGA_WRITEABLE);
 	}
 	return (pmap_unuse_pt(pmap, va, pde));
 }
