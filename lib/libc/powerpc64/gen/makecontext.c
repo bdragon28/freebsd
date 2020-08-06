@@ -75,20 +75,36 @@ __makecontext(ucontext_t *ucp, void (*start)(void), int argc, ...)
 	}
 
 	/*
-	 * The stack must have space for the frame pointer, saved
-	 * link register, overflow arguments, and be 16-byte
-	 * aligned.
+	 * Since we are setting up a stack frame for an arbitrary function,
+	 * we *must* allocate a Parameter Save Area on top of the normal
+	 * stack frame header, as the callee may try and use it.
+	 *
+	 * The ELFv1 stack frame header is 6 dwords (48 bytes) and the
+	 * ELFv2 stack frame header is 4 dwords (32 bytes).
+	 *
+	 * Immediately following this is the Parameter Save Area, which
+	 * must be a minimum of 8 dwords when it exists.
 	 */
 	stackargs = (argc > 8) ? argc - 8 : 0;
+#if !defined(_CALL_ELF) || _CALL_ELF == 1
 	sp = (char *) ucp->uc_stack.ss_sp + ucp->uc_stack.ss_size
-		- sizeof(uintptr_t)*(stackargs + 2);
+	    - sizeof(uintptr_t)*(6 + 8 + stackargs);
+#else
+	sp = (char *) ucp->uc_stack.ss_sp + ucp->uc_stack.ss_size
+	    - sizeof(uintptr_t)*(4 + 8 + stackargs);
+#endif
+	/* Ensure stack alignment. */
 	sp = (char *)((uintptr_t)sp & ~0x1f);
 
 	mc = &ucp->uc_mcontext;
 
 	/*
 	 * Up to 8 register args. Assumes all args are 64-bit and
-	 * integer only. Not sure how to cater for floating point.
+	 * integer only.
+	 *
+	 * makecontext() itself only defines the behavior for arguments
+	 * of type int. As such, we do not need to use the full
+	 * algo mandated by the ABI here, we can simply count in dwords.
 	 */
 	regargs = (argc > 8) ? 8 : argc;
 	va_start(ap, argc);
@@ -101,11 +117,16 @@ __makecontext(ucontext_t *ucp, void (*start)(void), int argc, ...)
 	if (argc > 8) {
 		uint64_t *argp;
 
-		/* Skip past frame pointer and saved LR */
+		/*
+		 * While we don't need to provide a copy of the first 8
+		 * params in the stack, we still need to reserve spill
+		 * space for the callee to use. Skip an additional 8 dwords
+		 * past the end of the header to land on the correct slot.
+		 */
 #if !defined(_CALL_ELF) || _CALL_ELF == 1
-		argp = (uint64_t *)sp + 6;
+		argp = (uint64_t *)sp + 6 + 8;
 #else
-		argp = (uint64_t *)sp + 4;
+		argp = (uint64_t *)sp + 4 + 8;
 #endif
 
 		for (i = 0; i < stackargs; i++)
