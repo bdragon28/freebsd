@@ -40,6 +40,7 @@ LD_EMULATION_mipsn32el=	elf32ltsmipn32_fbsd
 LD_EMULATION_powerpc=	elf32ppc_fbsd
 LD_EMULATION_powerpcspe=elf32ppc_fbsd
 LD_EMULATION_powerpc64=	elf64ppc_fbsd
+LD_EMULATION_powerpc64le=	elf64lppc_fbsd
 LD_EMULATION_riscv64=	elf64lriscv_fbsd
 LD_EMULATION_sparc64=	elf64_sparc_fbsd
 LD_EMULATION=${LD_EMULATION_${MACHINE_ARCH}}
