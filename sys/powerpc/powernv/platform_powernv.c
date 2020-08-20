@@ -61,6 +61,9 @@ __FBSDID("$FreeBSD$");
 extern void *ap_pcpu;
 #endif
 
+/* From aim_machdep.c */
+extern void install_hypertraps(int);
+
 void (*powernv_smp_ap_extra_init)(void);
 
 static int powernv_probe(platform_t);
@@ -176,6 +179,17 @@ powernv_attach(platform_t plat)
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 	lpcr |= LPCR_ILE;
+
+	/*
+	 * Install the normal hypertraps while we're running with
+	 * relocation off.
+	 *
+	 * Since we have done OPAL_REINIT_CPUS above,
+	 * we should replace the foreign endian hypertraps with the
+	 * native hypertraps.
+	 */
+	install_hypertraps(0);
+	__syncicache(EXC_RSVD, EXC_LAST - EXC_RSVD);
 #endif
 
 	mtspr(SPR_LPCR, lpcr);

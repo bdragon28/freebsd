@@ -152,6 +152,7 @@ extern Elf_Addr	_GLOBAL_OFFSET_TABLE_[];
 extern void	*rstcode, *rstcodeend;
 extern void	*trapcode, *trapcodeend;
 extern void	*hypertrapcode, *hypertrapcodeend;
+extern void	*hypertrapforeign, *hypertrapforeignend;
 extern void	*generictrap, *generictrap64;
 extern void	*alitrap, *aliend;
 extern void	*dsitrap, *dsiend;
@@ -169,6 +170,9 @@ extern void __restartkernel_virtual(vm_offset_t, vm_offset_t, vm_offset_t, void 
 void aim_early_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry,
     void *mdp, uint32_t mdp_cookie);
 void aim_cpu_init(vm_offset_t toc);
+#ifdef __powerpc64__
+void install_hypertraps(int byteswap);
+#endif
 
 void
 aim_early_init(vm_offset_t fdt, vm_offset_t toc, vm_offset_t ofentry, void *mdp,
@@ -416,11 +420,12 @@ aim_cpu_init(vm_offset_t toc)
 		    :: "r"(battable[0].batu), "r"(battable[0].batl));
 	}
 	#else
-	trapsize = (size_t)&hypertrapcodeend - (size_t)&hypertrapcode;
-	bcopy(&hypertrapcode, (void *)(EXC_HEA + trap_offset), trapsize);
-	bcopy(&hypertrapcode, (void *)(EXC_HMI + trap_offset), trapsize);
-	bcopy(&hypertrapcode, (void *)(EXC_HVI + trap_offset), trapsize);
-	bcopy(&hypertrapcode, (void *)(EXC_SOFT_PATCH + trap_offset), trapsize);
+
+#if BYTE_ORDER == BIG_ENDIAN
+	install_hypertraps(0);
+#else
+	install_hypertraps(1);
+#endif
 	#endif
 
 	bcopy(&rstcode, (void *)(EXC_RST + trap_offset), (size_t)&rstcodeend -
@@ -489,6 +494,55 @@ aim_cpu_init(vm_offset_t toc)
 	else
 		pmap_mmu_install(MMU_TYPE_OEA, BUS_PROBE_GENERIC);
 }
+
+
+#ifdef __powerpc64__
+static void
+invert_hypertrap(uint32_t *base, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i += 4) {
+		*base = bswap32(*base);
+		base++;
+	}
+}
+
+/*
+ * Reinstall the hypertrap code in the correct endianness.
+ */
+void
+install_hypertraps(int foreign)
+{
+	size_t		trapsize;
+
+	if (foreign) {
+		trapsize = (size_t)&hypertrapforeignend
+		    - (size_t)&hypertrapforeign;
+
+		bcopy(&hypertrapforeign, (void *)(EXC_HEA), trapsize);
+		invert_hypertrap((void *)(EXC_HEA), trapsize);
+
+		bcopy(&hypertrapforeign, (void *)(EXC_HMI), trapsize);
+		invert_hypertrap((void *)(EXC_HMI), trapsize);
+
+		bcopy(&hypertrapforeign, (void *)(EXC_HVI), trapsize);
+		invert_hypertrap((void *)(EXC_HVI), trapsize);
+
+		bcopy(&hypertrapforeign, (void *)(EXC_SOFT_PATCH),
+		    trapsize);
+		invert_hypertrap((void *)(EXC_SOFT_PATCH), trapsize);
+	} else {
+		trapsize = (size_t)&hypertrapcodeend
+		    - (size_t)&hypertrapcode;
+
+		bcopy(&hypertrapcode, (void *)(EXC_HEA), trapsize);
+		bcopy(&hypertrapcode, (void *)(EXC_HMI), trapsize);
+		bcopy(&hypertrapcode, (void *)(EXC_HVI), trapsize);
+		bcopy(&hypertrapcode, (void *)(EXC_SOFT_PATCH), trapsize);
+	}
+}
+#endif
 
 /*
  * Shutdown the CPU as much as possible.

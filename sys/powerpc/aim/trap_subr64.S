@@ -487,6 +487,33 @@ CNAME(hypertrapcode):
 CNAME(hypertrapcodeend):
 
 /*
+ * Foreign endian hypertrap.
+ * Note: This will be byteswapped by the installation code.
+ */
+	.globl	CNAME(hypertrapforeign),CNAME(hypertrapforeignend)
+	.p2align 3
+CNAME(hypertrapforeign):
+	/* TEMP DEBUG CODE -- sit around forever */
+
+0:
+	xnop
+	xnop
+	b 0b
+
+#if 0
+	mtsprg1	%r1			/* save SP */
+	mflr	%r1			/* Save the old LR in r1 */
+	mtsprg2 %r1			/* And then in SPRG2 */
+	li	%r1,TRAP_GENTRAP	/* Load magic addr to r1 */
+	ldbrx	%r1,0,%r1		/* Byteswapped load of target. */
+	addi	%r1,%r1,(generichypertrap_foreign-generictrap)
+	mtlr	%r1
+	/* No room for the vector, handle it later! */
+	blrl	/* Branch to generichypertrap_foreign in wrong endian */
+#endif
+CNAME(hypertrapforeignend):
+
+/*
  * For SLB misses: do special things for the kernel
  *
  * Note: SPRG1 is always safe to overwrite any time the MMU was on, which is
@@ -785,6 +812,35 @@ realtrap:
 	mfsprg2	%r29
 	mr	%r28,%r27
 	b	s_trap
+
+
+/*
+ * Special case code to recover from a cross endian hypervisor interrupt
+ * before we have a chance to call OPAL_CPU_REINIT on powernv.
+ *
+ * We enter it in the wrong endian and with the wrong R1 value due
+ * to the extremely limited space in the main trap area.
+ *
+ * Its job is to fix up the damage and bounce us back into the correct
+ * endianness with the registers set up properly.
+ */
+generichypertrap_foreign:
+	.long 0xa602287c	/* mflr		%r1			*/
+	.long 0xa643337c	/* mtsprg3	%r1			*/
+	.long 0xa600207c	/* mfmsr	%r1			*/
+	.long 0x01002168	/* xori 	%r1,%r1,1 (PSL_LE)	*/
+	.long 0xa6033b7c	/* mtsrr1	%r1			*/
+	.long 0x05009e42	/* LOAD_LR_NIA				*/
+	.long 0xa602287c	/* 0: mflr	%r1			*/
+	.long 0x1c002138	/* addi		%r1, %r1, (1f-0b)	*/
+	.long 0xa6033a7c	/* mtsrr0	%r1 (generichypertrap)	*/
+	.long 0xa642337c	/* mfsprg3	%r1			*/
+	.long 0xa603287c	/* mtlr		%r1			*/
+	.long 0xe0002038	/* li		%r1, 0xe0		*/
+	.long 0x2400004c	/* rfid					*/
+				/* 1:					*/
+
+/* generichypertrap_foreign falls through to generichypertrap here */
 
 /*
  * generictrap does some standard setup for trap handling to minimize
