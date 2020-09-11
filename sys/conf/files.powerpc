@@ -37,6 +37,14 @@ dev/iicbus/max6690.c		optional	max6690 powermac
 dev/iicbus/ofw_iicbus.c		optional	iicbus aim
 dev/ipmi/ipmi.c			optional	ipmi
 dev/ipmi/ipmi_opal.c		optional	powernv ipmi
+dev/bxe/bxe.c			optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/bxe_stats.c		optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/bxe_debug.c		optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/ecore_sp.c		optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/bxe_elink.c		optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/57710_init_values.c	optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/57711_init_values.c	optional	bxe pci powerpc64le | bxe pci powerpc64
+dev/bxe/57712_init_values.c	optional	bxe pci powerpc64le | bxe pci powerpc64
 dev/ixl/if_ixl.c		optional	ixl pci powerpc64 \
 	compile-with "${NORMAL_C} -I$S/dev/ixl"
 dev/ixl/ixl_pf_main.c		optional	ixl pci powerpc64 \

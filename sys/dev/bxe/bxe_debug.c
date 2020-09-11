@@ -29,11 +29,14 @@
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
-#include "bxe.h"
+#include <sys/param.h>
+#include <sys/types.h>
 
 #include "ddb/ddb.h"
 #include "ddb/db_sym.h"
 #include "ddb/db_lex.h"
+
+#include "bxe.h"
 
 #ifdef BXE_REG_NO_INLINE
 
