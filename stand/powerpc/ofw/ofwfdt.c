@@ -112,7 +112,7 @@ ofwfdt_fixups(void *fdtp)
 
 		node = OF_finddevice("/rtas");
 		OF_package_to_path(node, path, sizeof(path));
-		OF_getprop(node, "rtas-size", &len, sizeof(len));
+		OF_getencprop(node, "rtas-size", &len, sizeof(len));
 
 		/* Allocate memory */
 		rtasmem = OF_claim(0, len, 4096);
