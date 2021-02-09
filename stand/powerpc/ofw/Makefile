@@ -33,6 +33,10 @@ SRCS+=		cas.c
 CFLAGS+=	-DCAS
 .endif
 
+.if ${MACHINE_ARCH} == "powerpc64le"
+SRCS+=		trampolineLE.S
+.endif
+
 HELP_FILES=	${FDTSRC}/help.fdt
 
 # Always add MI sources
@@ -44,7 +48,13 @@ HELP_FILES=	${FDTSRC}/help.fdt
 RELOC?=		0x1C00000
 CFLAGS+=	-DRELOC=${RELOC} -g
 
-LDFLAGS=	-nostdlib -static -T ${.CURDIR}/ldscript.powerpc
+LDFLAGS=	-nostdlib -static
+
+.if ${MACHINE_ARCH} == "powerpc64le"
+LDFLAGS+=	-T ${.CURDIR}/ldscript.powerpcle
+.else
+LDFLAGS+=	-T ${.CURDIR}/ldscript.powerpc
+.endif
 
 # Open Firmware standalone support library
 LIBOFW=		${BOOTOBJ}/libofw/libofw.a
