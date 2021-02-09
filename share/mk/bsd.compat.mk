@@ -48,16 +48,16 @@ LIB32CPUFLAGS=	-mcpu=powerpc
 LIB32CPUFLAGS=	-mcpu=${COMPAT_CPUTYPE}
 .endif
 
-.if ${COMPAT_COMPILER_TYPE} != "gcc"
+.if ${COMPAT_COMPILER_TYPE} == "gcc"
+LIB32CPUFLAGS+=	-m32
+.else
 LIB32CPUFLAGS+=	-target powerpc-unknown-freebsd14.0
 .endif
-LIB32CPUFLAGS+=	-m32
 
 LIB32_MACHINE=	powerpc
 LIB32_MACHINE_ARCH=	powerpc
 LIB32WMAKEFLAGS=	\
 		LD="${XLD} -m elf32ppc_fbsd"
-LIB32WMAKEENV=	MACHINE_CPU="aim"
 
 .elif ${COMPAT_ARCH:Mmips64*} != ""
 HAS_COMPAT=32
