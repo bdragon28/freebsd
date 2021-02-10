@@ -132,7 +132,8 @@ command_help(int argc, char *argv[])
 	char	*topic, *subtopic, *t, *s, *d;
 
 	/* page the help text from our load path */
-	if ((hfd = open("/boot/loader.help", O_RDONLY)) < 0) {
+	snprintf(buf, sizeof(buf), "%s/boot/loader.help", getenv("loaddev"));
+	if ((hfd = open(buf, O_RDONLY)) < 0) {
 		printf("Verbose help not available, "
 		    "use '?' to list commands\n");
 		return (CMD_OK);

@@ -15,22 +15,14 @@ LIBDIR=		/boot
 .PATH:		${.CURDIR}/../userboot
 SRCS=		autoload.c
 SRCS+=		bcache.c
-.if ${MACHINE_ARCH} == "amd64"
 SRCS+=		biossmap.c
-.elif ${MACHINE_ARCH} == "powerpc64"
-# Add SRCS here
-.endif
 SRCS+=		bootinfo.c
-.if ${MACHINE_ARCH} == "amd64"
 SRCS+=		bootinfo32.c
-.endif
 SRCS+=		bootinfo64.c
 SRCS+=		conf.c
 SRCS+=		copy.c
 SRCS+=		devicename.c
-.if ${MACHINE_ARCH} == "amd64"
 SRCS+=		elf32_freebsd.c
-.endif
 SRCS+=		elf64_freebsd.c
 SRCS+=		host.c
 SRCS+=		main.c
@@ -45,11 +37,6 @@ CFLAGS.main.c+=	-I${BOOTSRC}/libsa/zfs
 CFLAGS.main.c+=	-I${SYSDIR}/contrib/openzfs/include
 CFLAGS.main.c+=	-I${SYSDIR}/contrib/openzfs/include/os/freebsd/zfs
 CFLAGS.gfx_fb.c+= -I$(SRCTOP)/sys/teken -I${SRCTOP}/contrib/pnglite
-
-.if ${MACHINE_ARCH:Mpowerpc64*} != ""
-CFLAGS+=	-fPIC -Wl,--notext
-.endif
-
 CWARNFLAGS.main.c += -Wno-implicit-function-declaration
 
 LDFLAGS+=	-nostdlib -Wl,-Bsymbolic

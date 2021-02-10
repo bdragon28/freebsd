@@ -43,7 +43,6 @@ __FBSDID("$FreeBSD$");
 #include "libofw.h"
 
 static int	ofwd_init(void);
-static void	ofwd_cleanup(void);
 static int	ofwd_strategy(void *devdata, int flag, daddr_t dblk,
 		    size_t size, char *buf, size_t *rsize);
 static int	ofwd_open(struct open_file *f, ...);
@@ -59,8 +58,7 @@ struct devsw ofwdisk = {
 	ofwd_open,
 	ofwd_close,
 	ofwd_ioctl,
-	ofwd_print,
-	ofwd_cleanup
+	ofwd_print
 };
 
 /*
@@ -83,13 +81,6 @@ ofwd_init(void)
 {
 
 	return (0);
-}
-
-static void
-ofwd_cleanup(void)
-{
-
-	/* Nothing to do. */
 }
 
 static int

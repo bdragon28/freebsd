@@ -2,9 +2,8 @@
 
 .include <src.opts.mk>
 
-# For amd64 and powerpc64 we have to build 32 and 64 bit versions
-# of things. For others we don't.
-# LIB32LIST is a list of libraries, which if
+# For amd64 we have to build 32 and 64 bit versions of things. For
+# others we don't. LIB32LIST is a list of libraries, which if
 # included, need to be built 32-bit as well.
 .if ${MACHINE_ARCH} == "amd64"
 LIB32LIST=libsa
@@ -14,10 +13,6 @@ LIB32LIST+=		ficl
 .if ${MK_LOADER_LUA} != "no"
 LIB32LIST+=		liblua
 .endif
-.endif
-
-.if (${MACHINE_ARCH:Mpowerpc64*} != "")
-LIB32LIST=libsa fdt ficl liblua libofw
 .endif
 
 S.yes+=			libsa

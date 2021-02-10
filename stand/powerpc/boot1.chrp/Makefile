@@ -1,7 +1,5 @@
 # $FreeBSD$
 
-DO32=1
-
 .include <bsd.init.mk>
 
 PROG=           boot1.elf

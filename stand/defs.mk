@@ -63,7 +63,7 @@ CFLAGS+=	-nostdinc
 # the only thing that should be there are -I directives, and as few of
 # those as possible.
 CFLAGS+=	${CFLAGS_EARLY} ${CFLAGS_EARLY.${.IMPSRC:T}} ${CFLAGS_EARLY.${.TARGET:T}}
-.if (${MACHINE_ARCH} == "amd64" || ${MACHINE_ARCH:Mpowerpc64*} != "") && ${DO32:U0} == 1
+.if ${MACHINE_ARCH} == "amd64" && ${DO32:U0} == 1
 CFLAGS+=	-I${BOOTOBJ}/libsa32
 .else
 CFLAGS+=	-I${BOOTOBJ}/libsa
@@ -105,15 +105,10 @@ CFLAGS+= -DLOADER_DISK_SUPPORT
 
 # Machine specific flags for all builds here
 
-# Most PowerPC builds are 32 bit big-endian, with the exception of the POWER9
-# kboot and userboot, which are powerpc64 little-endian.
+# Ensure PowerPC64 and PowerPC64LE boot loaders are compiled as 32 bit
+# and in big endian.
 .if ${MACHINE_ARCH:Mpowerpc64*} != ""
-# Default to 1 so we build the top level 32 bit.
-. if ${DO32:U1} == 1
 CFLAGS+=	-m32 -mcpu=powerpc -mbig-endian
-. else
-CFLAGS+=	-m64 -mcpu=powerpc64 -mlittle-endian
-. endif
 .endif
 
 # For amd64, there's a bit of mixed bag. Some of the tree (i386, lib*32) is

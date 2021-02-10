@@ -6,8 +6,6 @@
 FICL_CPUARCH=	i386
 .elif ${MACHINE_ARCH:Mmips64*} != ""
 FICL_CPUARCH=	mips64
-.elif ${MACHINE_ARCH:Mpowerpc64*} != "" && ${DO32:U0} == 1
-FICL_CPUARCH=  powerpc
 .else
 FICL_CPUARCH=	${MACHINE_CPUARCH}
 .endif
