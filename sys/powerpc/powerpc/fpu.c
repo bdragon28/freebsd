@@ -63,16 +63,7 @@ save_fpu_int(struct thread *td)
 		mtmsr(msr | PSL_FP);
 
 	/*
-	 * Save the floating-point registers and FPSCR to the PCB.
-	 *
-	 * When VSX is enabled, we save all four words of VSR 0-31 here.
-	 * VSR 32-63 (aka VR 0-31) will be saved separately by
-	 * save_vec_int(), as PCB_VEC is required to be on whenever
-	 * PCB_VSX is on.
-	 *
-	 * If VSX is disabled, we use the traditional stfd to save just
-	 * the FPRs to the left half of VSR 0-31. This matches the way the
-	 * register file is laid out in the OpenPOWER spec.
+	 * Save the floating-point registers and FPSCR to the PCB
 	 */
 	if (pcb->pcb_flags & PCB_VSX) {
 	#define SFP(n)   __asm ("stxvw4x " #n ", 0,%0" \
