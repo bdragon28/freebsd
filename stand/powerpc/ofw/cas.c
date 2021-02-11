@@ -222,7 +222,7 @@ ppc64_cas(void)
 	    ihandle, 1, 1, &ibm_arch_vec, &err))
 		printf("cas: failed to call CAS method\n");
 	else if (err) {
-		printf("cas: error: 0x%08lX\n", err);
+		printf("cas: error: 0x%08jX\n", (uintmax_t)err);
 		rc = -1;
 	}
 
