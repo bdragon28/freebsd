@@ -458,8 +458,8 @@ OF_call_method(char *method, ihandle_t instance, int nargs, int nreturns, ...)
 	if (args.args_n_results[nargs])
 		return (OUT(args.args_n_results[nargs]));
 	/* XXX what if ihandles or phandles are returned */
-	for (cp = (cell_t *)(args.args_n_results + nargs + (n = args.nreturns));
-	    --n > 0;)
+	for (cp = (cell_t *)(args.args_n_results + nargs +
+	    (n = be32toh(args.nreturns))); --n > 0;)
 		*va_arg(ap, cell_t *) = OUT(*--cp);
 	va_end(ap);
 	return (0);
