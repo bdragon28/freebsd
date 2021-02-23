@@ -208,7 +208,7 @@ ofw_init(void *vpd, int res, ofwfp_t openfirm, char *arg, int argl)
 #if BYTE_ORDER == LITTLE_ENDIAN
 	ofw = call_ofw;
 #else
-	ofw = openfirm;
+	realofw = ofw = openfirm;
 #endif
 
 	chosenh = ofw_finddevice("/chosen");

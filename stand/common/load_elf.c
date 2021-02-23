@@ -735,7 +735,7 @@ __elfN(loadimage)(struct preloaded_file *fp, elf_file_t ef, uint64_t off)
 		}
 #endif
 		size = shdr[i].sh_size;
-#if defined(__powerpc__)
+#if defined(__powerpc__) && BYTE_ORDER == BIG_ENDIAN
   #if __ELF_WORD_SIZE == 64
 		size = htobe64(size);
   #else
@@ -787,7 +787,7 @@ __elfN(loadimage)(struct preloaded_file *fp, elf_file_t ef, uint64_t off)
 	printf("]");
 #endif
 
-#if defined(__powerpc__)
+#if defined(__powerpc__) && BYTE_ORDER == BIG_ENDIAN
   /* On PowerPC we always need to provide BE data to the kernel */
   #if __ELF_WORD_SIZE == 64
 	ssym = htobe64((uint64_t)ssym);
