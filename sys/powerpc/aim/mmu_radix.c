@@ -1885,7 +1885,7 @@ mmu_radix_setup_pagetables(vm_size_t hwphyssz)
 	 * are required for promotion of the corresponding kernel virtual
 	 * addresses to superpage mappings.
 	 */
-	vm_phys_add_seg(KPTphys, KPTphys + ptoa(nkpt));
+	vm_phys_early_add_seg(KPTphys, KPTphys + ptoa(nkpt));
 }
 
 static void
@@ -6314,48 +6314,69 @@ pmap_change_attr_locked(vm_offset_t va, vm_size_t size, int mode, bool flush)
 void
 mmu_radix_page_array_startup(long pages)
 {
-#ifdef notyet
+	long dom_pages[MAXMEMDOM];
 	pml2_entry_t *l2e;
 	pml3_entry_t *pde;
 	pml3_entry_t newl3;
 	vm_offset_t va;
-	long pfn;
-	int domain, i;
-#endif
+	vm_size_t size;
+	int domain, i, j;
 	vm_paddr_t pa;
 	vm_offset_t start, end;
 
-	vm_page_array_size = pages;
-
-	start = VM_MIN_KERNEL_ADDRESS;
+	/* Put it at the end of addressable space. */
+	start = VM_MAX_KERNEL_ADDRESS + 1; // -
+		//(round_2mpage(pages * sizeof(struct vm_page)));
 	end = start + pages * sizeof(struct vm_page);
 
-	pa = vm_phys_early_alloc(0, end - start);
-
-	start = mmu_radix_map(&start, pa, end - start, VM_MEMATTR_DEFAULT);
-#ifdef notyet
-	/* TODO: NUMA vm_page_array.  Blocked out until then (copied from amd64). */
-	for (va = start; va < end; va += L3_PAGE_SIZE) {
-		pfn = first_page + (va - start) / sizeof(struct vm_page);
-		domain = vm_phys_domain(ptoa(pfn));
-		l2e = pmap_pml2e(kernel_pmap, va);
-		if ((be64toh(*l2e) & PG_V) == 0) {
-			pa = vm_phys_early_alloc(domain, PAGE_SIZE);
-			dump_add_page(pa);
-			pagezero(PHYS_TO_DMAP(pa));
-			pde_store(l2e, (pml2_entry_t)pa);
-		}
-		pde = pmap_l2e_to_l3e(l2e, va);
-		if ((be64toh(*pde) & PG_V) != 0)
-			panic("Unexpected pde %p", pde);
-		pa = vm_phys_early_alloc(domain, L3_PAGE_SIZE);
-		for (i = 0; i < NPDEPG; i++)
-			dump_add_page(pa + i * PAGE_SIZE);
-		newl3 = (pml3_entry_t)(pa | RPTE_EAA_P | RPTE_EAA_R | RPTE_EAA_W);
-		pte_store(pde, newl3);
+	bzero(dom_pages, sizeof(dom_pages));
+	/* Now get the number of pages required per domain. */
+	for (i = 0; i < vm_phys_nsegs; i++) {
+		domain = vm_phys_segs[i].domain;
+		KASSERT(domain < MAXMEMDOM,
+		    ("Invalid vm_phys_segs NUMA domain %d!\n", domain));
+		/* Get size of vm_page_array needed for this segment. */
+		size = btoc(vm_phys_segs[i].end - vm_phys_segs[i].start);
+		dom_pages[domain] += size;
 	}
-#endif
+
+	for (i = 0; phys_avail[i + 1] != 0; i+= 2) {
+		domain = vm_phys_domain(phys_avail[i]);
+		KASSERT(domain < MAXMEMDOM,
+		    ("Invalid phys_avail NUMA domain %d!\n", domain));
+		size = btoc(phys_avail[i + 1] - phys_avail[i]);
+		dom_pages[domain] += size;
+	}
+
+	va = start;
+	vm_page_array_size = 0;
+	for (i = 0; i < MAXMEMDOM && vm_page_array_size < pages; i++) {
+		if (dom_pages[i] == 0)
+			continue;
+		size = ulmin(pages - vm_page_array_size, dom_pages[i]);
+		size = round_2mpage(size * sizeof(struct vm_page));
+		printf("pages: %ld, dom_pages: %ld, size: %ld\n", pages - vm_page_array_size, dom_pages[i], size);
+		vm_page_array_size += size / sizeof(struct vm_page);;
+		for (; size > 0; size -= L3_PAGE_SIZE, va += L3_PAGE_SIZE) {
+			l2e = pmap_pml2e(kernel_pmap, va);
+			if ((be64toh(*l2e) & PG_V) == 0) {
+				pa = vm_phys_early_alloc(i, PAGE_SIZE);
+				dump_add_page(pa);
+				pagezero(PHYS_TO_DMAP(pa));
+				pde_store(l2e, (pml2_entry_t)pa);
+			}
+			pde = pmap_l2e_to_l3e(l2e, va);
+			if ((be64toh(*pde) & PG_V) != 0)
+				panic("Unexpected pde %p", pde);
+			pa = vm_phys_early_alloc(i, L3_PAGE_SIZE);
+			for (j = 0; j < NPDEPG; j++)
+				dump_add_page(pa + j * PAGE_SIZE);
+			newl3 = (pml3_entry_t)(pa | RPTE_EAA_P | RPTE_EAA_R | RPTE_EAA_W);
+			pte_store(pde, newl3);
+		}
+	}
 	vm_page_array = (vm_page_t)start;
+	virtual_end = start - 1;
 }
 
 #ifdef DDB
