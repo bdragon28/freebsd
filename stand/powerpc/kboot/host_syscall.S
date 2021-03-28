@@ -101,3 +101,20 @@ ENTRY(host_getdents)
 	blr
 END(host_getdents)
 
+ENTRY(host_ioctl)
+	li %r0,54 # SYS_ioctl
+	sc
+	blr
+END(host_ioctl)
+
+ENTRY(host_socket)
+	li %r0,326 # SYS_socket
+	sc
+	blr
+END(host_socket)
+
+ENTRY(host_bind)
+	li %r0,327 # SYS_bind
+	sc
+	blr
+END(host_bind)

@@ -85,10 +85,8 @@ struct fs_ops *file_system[] = {
 extern struct netif_driver kbootnet;
 
 struct netif_driver *netif_drivers[] = {
-#if 0 /* XXX */
 #if defined(LOADER_NET_SUPPORT)
 	&kbootnet,
-#endif
 #endif
 	NULL,
 };

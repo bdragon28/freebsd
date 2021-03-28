@@ -56,5 +56,8 @@ int host_select(int nfds, long *readfds, long *writefds, long *exceptfds,
 int kexec_load(uint32_t start, int nsegs, uint32_t segs);
 int host_reboot(int, int, int, uint32_t);
 int host_getdents(int fd, void *dirp, int count);
+int host_ioctl(int fd, unsigned long req, void *argp);
+int host_socket(int domain, int type, int protocol);
+int host_bind(int fd, void *addr, size_t addrlen);
 
 #endif

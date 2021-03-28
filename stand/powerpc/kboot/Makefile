@@ -19,6 +19,7 @@ INSTALLFLAGS=	-b
 # Architecture-specific loader code
 SRCS=		conf.c vers.c main.c ppc64_elf_freebsd.c
 SRCS+=		host_init.S host_syscall.S hostcons.c hostdisk.c kerneltramp.S
+SRCS+=		kbootnet.c
 SRCS+=		kbootfdt.c ucmpdi2.c gfx_fb.c
 
 CFLAGS.gfx_fb.c += -I${SRCTOP}/contrib/pnglite
