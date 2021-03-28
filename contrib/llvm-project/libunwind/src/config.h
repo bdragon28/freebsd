@@ -111,10 +111,6 @@
 #endif
 #endif
 
-#if defined(__powerpc64__) && defined(_ARCH_PWR8)
-#define PPC64_HAS_VMX
-#endif
-
 #if defined(NDEBUG) && defined(_LIBUNWIND_IS_BAREMETAL)
 #define _LIBUNWIND_ABORT(msg)                                                  \
   do {                                                                         \
