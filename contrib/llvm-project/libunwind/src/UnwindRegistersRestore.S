@@ -406,8 +406,8 @@ DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_ppc_jumpto)
 
 #if defined(__SPE__)
 #define PPC_SPE_LD(n) \
-  evldw       %r0, ((8 * n) + 160)(%r3); \
-  evmergehilo %r##n, %r0, %r##n;
+  lwz       %r0, (160 + (n * 8))(%r3); \
+  evmergelo %r##n, %r0, %r##n;
 
   // Only changes the upper half of the GPRs.
   // skip r0 for now
@@ -598,15 +598,17 @@ Lnovec:
   mtlr    %r0
 
 #if defined(__SPE__)
+  lwz     %r0, 420(%r3)   // SPEFSCR
+  mtspr   512, %r0
   lwz     %r0, 160(%r3)
   evmergelo %r0, %r0, %r0 // upper half of r0
   lwz     %r0,   8(%r3)   // lower half of r0
 #else
   lwz     %r0,   8(%r3)   // do r0 now
+#endif
   lwz     %r5,  28(%r3)   // do r5 now
   lwz     %r4,  24(%r3)   // do r4 now
   lwz     %r1,  12(%r3)   // do sp now
-#endif
   lwz     %r3,  20(%r3)   // do r3 last
   blr
 

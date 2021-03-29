@@ -642,7 +642,9 @@ private:
     } __fpregs[32];
 
     unsigned int __fpscr_pad; /* fpscr is 64 bits, 32 bits of rubbish */
-    unsigned int __fpscr;     /* floating point status register */
+    unsigned int __fpscr;     /* floating point status register or
+                               * SPEFSCR, at offset 420.
+                               */
   };
 
   ppc_thread_state_t _registers;
@@ -680,6 +682,8 @@ inline bool Registers_ppc::validRegister(int regNum) const {
   if (regNum == UNW_REG_SP)
     return true;
   if (regNum == UNW_PPC_VRSAVE)
+    return true;
+  if (regNum == UNW_PPC_SPEFSCR)
     return true;
   if (regNum < 0)
     return false;
@@ -821,6 +825,8 @@ inline uint32_t Registers_ppc::getRegister(int regNum) const {
   case UNW_PPC_SPE_HI_R30:
   case UNW_PPC_SPE_HI_R31:
     return _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].spe.speHi;
+  case UNW_PPC_SPEFSCR:
+    return _floatRegisters.__fpscr;
   }
   _LIBUNWIND_ABORT("unsupported ppc register");
 }
@@ -974,14 +980,14 @@ inline void Registers_ppc::setRegister(int regNum, uint32_t value) {
   case UNW_PPC_VRSAVE:
     _registers.__vrsave = value;
     return;
-    // not saved
-    return;
   case UNW_PPC_XER:
     _registers.__xer = value;
     return;
+  case UNW_PPC_SPEFSCR:
+    _floatRegisters.__fpscr = value;
+    return;
   case UNW_PPC_AP:
   case UNW_PPC_VSCR:
-  case UNW_PPC_SPEFSCR:
     // not saved
     return;
   case UNW_PPC_SPE_HI_R0:

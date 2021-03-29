@@ -611,6 +611,11 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   stw     %r0, 148(%r3)
 
 #if defined(__SPE__)
+
+  // save SPEFSCR register
+  mfspr   %r0, 512
+  stw     %r0, 420(%r3)
+
 #define PPC_SPE_STWHI(n) \
   evmergehi %r0, %r0, %r##n; \
   stw     %r0, ((8 * n) + 160)(%r3);
