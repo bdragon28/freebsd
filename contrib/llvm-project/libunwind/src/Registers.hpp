@@ -560,6 +560,8 @@ inline void Registers_x86_64::setVectorRegister(int regNum, v128 value) {
 
 
 #if defined(_LIBUNWIND_TARGET_PPC)
+class _LIBUNWIND_HIDDEN Registers_ppc;
+extern "C" void __libunwind_Registers_ppc_jumpto(Registers_ppc *);
 /// Registers_ppc holds the register state of a thread in a 32-bit PowerPC
 /// process.
 class _LIBUNWIND_HIDDEN Registers_ppc {
@@ -577,7 +579,7 @@ public:
   v128        getVectorRegister(int num) const;
   void        setVectorRegister(int num, v128 value);
   static const char *getRegisterName(int num);
-  void        jumpto();
+  void        jumpto() { __libunwind_Registers_ppc_jumpto(this); }
   static int  lastDwarfRegNum() { return _LIBUNWIND_HIGHEST_DWARF_REGISTER_PPC; }
   static int  getArch() { return REGISTERS_PPC; }
 
@@ -631,7 +633,13 @@ private:
   };
 
   struct ppc_float_state_t {
-    double __fpregs[32];
+    union ppc_spe_or_fpr_t {
+      double f;
+      struct spereg_s {
+        uint32_t speHi;
+        uint32_t __spe_pad;
+      } spe;
+    } __fpregs[32];
 
     unsigned int __fpscr_pad; /* fpscr is 64 bits, 32 bits of rubbish */
     unsigned int __fpscr;     /* floating point status register */
@@ -684,6 +692,8 @@ inline bool Registers_ppc::validRegister(int regNum) const {
   if (regNum == UNW_PPC_CTR)
     return true;
   if ((UNW_PPC_CR0 <= regNum) && (regNum <= UNW_PPC_CR7))
+    return true;
+  if ((UNW_PPC_SPE_HI_R0 <= regNum) && (regNum <= UNW_PPC_SPE_HI_R31))
     return true;
   return false;
 }
@@ -778,6 +788,39 @@ inline uint32_t Registers_ppc::getRegister(int regNum) const {
     return (_registers.__cr & 0x0000000F);
   case UNW_PPC_VRSAVE:
     return _registers.__vrsave;
+  case UNW_PPC_SPE_HI_R0:
+  case UNW_PPC_SPE_HI_R1:
+  case UNW_PPC_SPE_HI_R2:
+  case UNW_PPC_SPE_HI_R3:
+  case UNW_PPC_SPE_HI_R4:
+  case UNW_PPC_SPE_HI_R5:
+  case UNW_PPC_SPE_HI_R6:
+  case UNW_PPC_SPE_HI_R7:
+  case UNW_PPC_SPE_HI_R8:
+  case UNW_PPC_SPE_HI_R9:
+  case UNW_PPC_SPE_HI_R10:
+  case UNW_PPC_SPE_HI_R11:
+  case UNW_PPC_SPE_HI_R12:
+  case UNW_PPC_SPE_HI_R13:
+  case UNW_PPC_SPE_HI_R14:
+  case UNW_PPC_SPE_HI_R15:
+  case UNW_PPC_SPE_HI_R16:
+  case UNW_PPC_SPE_HI_R17:
+  case UNW_PPC_SPE_HI_R18:
+  case UNW_PPC_SPE_HI_R19:
+  case UNW_PPC_SPE_HI_R20:
+  case UNW_PPC_SPE_HI_R21:
+  case UNW_PPC_SPE_HI_R22:
+  case UNW_PPC_SPE_HI_R23:
+  case UNW_PPC_SPE_HI_R24:
+  case UNW_PPC_SPE_HI_R25:
+  case UNW_PPC_SPE_HI_R26:
+  case UNW_PPC_SPE_HI_R27:
+  case UNW_PPC_SPE_HI_R28:
+  case UNW_PPC_SPE_HI_R29:
+  case UNW_PPC_SPE_HI_R30:
+  case UNW_PPC_SPE_HI_R31:
+    return _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].speHi;
   }
   _LIBUNWIND_ABORT("unsupported ppc register");
 }
@@ -941,6 +984,40 @@ inline void Registers_ppc::setRegister(int regNum, uint32_t value) {
   case UNW_PPC_SPEFSCR:
     // not saved
     return;
+  case UNW_PPC_SPE_HI_R0:
+  case UNW_PPC_SPE_HI_R1:
+  case UNW_PPC_SPE_HI_R2:
+  case UNW_PPC_SPE_HI_R3:
+  case UNW_PPC_SPE_HI_R4:
+  case UNW_PPC_SPE_HI_R5:
+  case UNW_PPC_SPE_HI_R6:
+  case UNW_PPC_SPE_HI_R7:
+  case UNW_PPC_SPE_HI_R8:
+  case UNW_PPC_SPE_HI_R9:
+  case UNW_PPC_SPE_HI_R10:
+  case UNW_PPC_SPE_HI_R11:
+  case UNW_PPC_SPE_HI_R12:
+  case UNW_PPC_SPE_HI_R13:
+  case UNW_PPC_SPE_HI_R14:
+  case UNW_PPC_SPE_HI_R15:
+  case UNW_PPC_SPE_HI_R16:
+  case UNW_PPC_SPE_HI_R17:
+  case UNW_PPC_SPE_HI_R18:
+  case UNW_PPC_SPE_HI_R19:
+  case UNW_PPC_SPE_HI_R20:
+  case UNW_PPC_SPE_HI_R21:
+  case UNW_PPC_SPE_HI_R22:
+  case UNW_PPC_SPE_HI_R23:
+  case UNW_PPC_SPE_HI_R24:
+  case UNW_PPC_SPE_HI_R25:
+  case UNW_PPC_SPE_HI_R26:
+  case UNW_PPC_SPE_HI_R27:
+  case UNW_PPC_SPE_HI_R28:
+  case UNW_PPC_SPE_HI_R29:
+  case UNW_PPC_SPE_HI_R30:
+  case UNW_PPC_SPE_HI_R31:
+    _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].speHi = value;
+    return;
   }
   _LIBUNWIND_ABORT("unsupported ppc register");
 }
@@ -955,12 +1032,12 @@ inline bool Registers_ppc::validFloatRegister(int regNum) const {
 
 inline double Registers_ppc::getFloatRegister(int regNum) const {
   assert(validFloatRegister(regNum));
-  return _floatRegisters.__fpregs[regNum - UNW_PPC_F0];
+  return _floatRegisters.__fpregs[regNum - UNW_PPC_F0].f;
 }
 
 inline void Registers_ppc::setFloatRegister(int regNum, double value) {
   assert(validFloatRegister(regNum));
-  _floatRegisters.__fpregs[regNum - UNW_PPC_F0] = value;
+  _floatRegisters.__fpregs[regNum - UNW_PPC_F0].f = value;
 }
 
 inline bool Registers_ppc::validVectorRegister(int regNum) const {
@@ -1118,6 +1195,70 @@ inline const char *Registers_ppc::getRegisterName(int regNum) {
     return "fp31";
   case UNW_PPC_LR:
     return "lr";
+  case UNW_PPC_SPE_HI_R0:
+    return "Sr0";
+  case UNW_PPC_SPE_HI_R1:
+    return "Sr1";
+  case UNW_PPC_SPE_HI_R2:
+    return "Sr2";
+  case UNW_PPC_SPE_HI_R3:
+    return "Sr3";
+  case UNW_PPC_SPE_HI_R4:
+    return "Sr4";
+  case UNW_PPC_SPE_HI_R5:
+    return "Sr5";
+  case UNW_PPC_SPE_HI_R6:
+    return "Sr6";
+  case UNW_PPC_SPE_HI_R7:
+    return "Sr7";
+  case UNW_PPC_SPE_HI_R8:
+    return "Sr8";
+  case UNW_PPC_SPE_HI_R9:
+    return "Sr9";
+  case UNW_PPC_SPE_HI_R10:
+    return "Sr10";
+  case UNW_PPC_SPE_HI_R11:
+    return "Sr11";
+  case UNW_PPC_SPE_HI_R12:
+    return "Sr12";
+  case UNW_PPC_SPE_HI_R13:
+    return "Sr13";
+  case UNW_PPC_SPE_HI_R14:
+    return "Sr14";
+  case UNW_PPC_SPE_HI_R15:
+    return "Sr15";
+  case UNW_PPC_SPE_HI_R16:
+    return "Sr16";
+  case UNW_PPC_SPE_HI_R17:
+    return "Sr17";
+  case UNW_PPC_SPE_HI_R18:
+    return "Sr18";
+  case UNW_PPC_SPE_HI_R19:
+    return "Sr19";
+  case UNW_PPC_SPE_HI_R20:
+    return "Sr20";
+  case UNW_PPC_SPE_HI_R21:
+    return "Sr21";
+  case UNW_PPC_SPE_HI_R22:
+    return "Sr22";
+  case UNW_PPC_SPE_HI_R23:
+    return "Sr23";
+  case UNW_PPC_SPE_HI_R24:
+    return "Sr24";
+  case UNW_PPC_SPE_HI_R25:
+    return "Sr25";
+  case UNW_PPC_SPE_HI_R26:
+    return "Sr26";
+  case UNW_PPC_SPE_HI_R27:
+    return "Sr27";
+  case UNW_PPC_SPE_HI_R28:
+    return "Sr28";
+  case UNW_PPC_SPE_HI_R29:
+    return "Sr29";
+  case UNW_PPC_SPE_HI_R30:
+    return "Sr30";
+  case UNW_PPC_SPE_HI_R31:
+    return "Sr31";
   default:
     return "unknown register";
   }

@@ -396,13 +396,53 @@ Lnovec:
 
 #elif defined(__ppc__)
 
-DEFINE_LIBUNWIND_FUNCTION(_ZN9libunwind13Registers_ppc6jumptoEv)
+DEFINE_LIBUNWIND_FUNCTION(__libunwind_Registers_ppc_jumpto)
 //
-// void libunwind::Registers_ppc::jumpto()
+// extern "C" void __libunwind_Registers_ppc_jumpto(Registers_ppc *);
 //
 // On entry:
 //  thread_state pointer is in r3
 //
+
+#if defined(__SPE__)
+#define PPC_SPE_LD(n) \
+  evldw       %r0, ((8 * n) + 160)(%r3); \
+  evmergehilo %r##n, %r0, %r##n;
+
+  // Only changes the upper half of the GPRs.
+  // skip r0 for now
+  PPC_SPE_LD(1)
+  PPC_SPE_LD(2)
+  PPC_SPE_LD(3)
+  PPC_SPE_LD(4)
+  PPC_SPE_LD(5)
+  PPC_SPE_LD(6)
+  PPC_SPE_LD(7)
+  PPC_SPE_LD(8)
+  PPC_SPE_LD(9)
+  PPC_SPE_LD(10)
+  PPC_SPE_LD(11)
+  PPC_SPE_LD(12)
+  PPC_SPE_LD(13)
+  PPC_SPE_LD(14)
+  PPC_SPE_LD(15)
+  PPC_SPE_LD(16)
+  PPC_SPE_LD(17)
+  PPC_SPE_LD(18)
+  PPC_SPE_LD(19)
+  PPC_SPE_LD(20)
+  PPC_SPE_LD(21)
+  PPC_SPE_LD(22)
+  PPC_SPE_LD(23)
+  PPC_SPE_LD(24)
+  PPC_SPE_LD(25)
+  PPC_SPE_LD(26)
+  PPC_SPE_LD(27)
+  PPC_SPE_LD(28)
+  PPC_SPE_LD(29)
+  PPC_SPE_LD(30)
+  PPC_SPE_LD(31)
+#endif
 
   // restore integral registerrs
   // skip r0 for now
@@ -554,14 +594,21 @@ Lnovec:
   mtcr    %r0
   lwz     %r0, 148(%r3)   // __ctr
   mtctr   %r0
-  lwz     %r0,   0(%r3)   // __ssr0
-  mtctr   %r0
+  lwz     %r0,   0(%r3)   // __srr0
+  mtlr    %r0
+
+#if defined(__SPE__)
+  lwz     %r0, 160(%r3)
+  evmergelo %r0, %r0, %r0 // upper half of r0
+  lwz     %r0,   8(%r3)   // lower half of r0
+#else
   lwz     %r0,   8(%r3)   // do r0 now
   lwz     %r5,  28(%r3)   // do r5 now
   lwz     %r4,  24(%r3)   // do r4 now
   lwz     %r1,  12(%r3)   // do sp now
+#endif
   lwz     %r3,  20(%r3)   // do r3 last
-  bctr
+  blr
 
 #elif defined(__aarch64__)
 

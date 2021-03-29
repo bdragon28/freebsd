@@ -340,7 +340,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   // save GPRs
   PPC64_STR(0)
   mflr  %r0
-  std   %r0, PPC64_OFFS_SRR0(%r3) // store lr as ssr0
+  std   %r0, PPC64_OFFS_SRR0(%r3) // store lr as srr0
   PPC64_STR(1)
   PPC64_STR(2)
   PPC64_STR(3)
@@ -567,7 +567,7 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
 DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   stw     %r0,   8(%r3)
   mflr    %r0
-  stw     %r0,   0(%r3) // store lr as ssr0
+  stw     %r0,   0(%r3) // store lr as srr0
   stw     %r1,  12(%r3)
   stw     %r2,  16(%r3)
   stw     %r3,  20(%r3)
@@ -609,6 +609,45 @@ DEFINE_LIBUNWIND_FUNCTION(__unw_getcontext)
   // save CTR register
   mfctr   %r0
   stw     %r0, 148(%r3)
+
+#if defined(__SPE__)
+#define PPC_SPE_STWHI(n) \
+  evmergehi %r0, %r0, %r##n; \
+  stw     %r0, ((8 * n) + 160)(%r3);
+
+  PPC_SPE_STWHI(0)
+  PPC_SPE_STWHI(1)
+  PPC_SPE_STWHI(2)
+  PPC_SPE_STWHI(3)
+  PPC_SPE_STWHI(4)
+  PPC_SPE_STWHI(5)
+  PPC_SPE_STWHI(6)
+  PPC_SPE_STWHI(7)
+  PPC_SPE_STWHI(8)
+  PPC_SPE_STWHI(9)
+  PPC_SPE_STWHI(10)
+  PPC_SPE_STWHI(11)
+  PPC_SPE_STWHI(12)
+  PPC_SPE_STWHI(13)
+  PPC_SPE_STWHI(14)
+  PPC_SPE_STWHI(15)
+  PPC_SPE_STWHI(16)
+  PPC_SPE_STWHI(17)
+  PPC_SPE_STWHI(18)
+  PPC_SPE_STWHI(19)
+  PPC_SPE_STWHI(20)
+  PPC_SPE_STWHI(21)
+  PPC_SPE_STWHI(22)
+  PPC_SPE_STWHI(23)
+  PPC_SPE_STWHI(24)
+  PPC_SPE_STWHI(25)
+  PPC_SPE_STWHI(26)
+  PPC_SPE_STWHI(27)
+  PPC_SPE_STWHI(28)
+  PPC_SPE_STWHI(29)
+  PPC_SPE_STWHI(30)
+  PPC_SPE_STWHI(31)
+#endif
 
 #if !defined(__NO_FPRS__)
   // save float registers

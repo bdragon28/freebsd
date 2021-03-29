@@ -25,6 +25,9 @@
 #define PPC64_OFFS_VRSAVE 304
 #define PPC64_OFFS_FP     312
 #define PPC64_OFFS_V      824
+#elif defined(__ppc__)
+#define SEPARATOR ;
+#define PPC_OFFS_SRR0     0
 #elif defined(__APPLE__) && defined(__aarch64__)
 #define SEPARATOR %%
 #else
