@@ -820,7 +820,7 @@ inline uint32_t Registers_ppc::getRegister(int regNum) const {
   case UNW_PPC_SPE_HI_R29:
   case UNW_PPC_SPE_HI_R30:
   case UNW_PPC_SPE_HI_R31:
-    return _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].speHi;
+    return _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].spe.speHi;
   }
   _LIBUNWIND_ABORT("unsupported ppc register");
 }
@@ -1016,7 +1016,7 @@ inline void Registers_ppc::setRegister(int regNum, uint32_t value) {
   case UNW_PPC_SPE_HI_R29:
   case UNW_PPC_SPE_HI_R30:
   case UNW_PPC_SPE_HI_R31:
-    _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].speHi = value;
+    _floatRegisters.__fpregs[regNum - UNW_PPC_SPE_HI_R0].spe.speHi = value;
     return;
   }
   _LIBUNWIND_ABORT("unsupported ppc register");
